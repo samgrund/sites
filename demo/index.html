@@ -980,13 +980,7 @@ plt.show()</code></pre>
                     Use the slider below to change the eccentricity:
                 </p>
 
-                <div class="widget">
-                    <label for="eccentricity-slider">
-                        🎚️ Orbital Eccentricity: <span id="ecc-value" class="value-display">0.30</span>
-                    </label>
-                    <input type="range" id="eccentricity-slider" 
-                           min="0" max="0.95" step="0.01" value="0.30">
-                </div>
+                
 
                 <div class="cell" data-cell-id="ch1-4" data-interactive="eccentricity">
                     <pre class="language-python"><code class="language-python" spellcheck="false"># This cell updates when you move the slider!
@@ -1030,6 +1024,14 @@ print(f"Ratio: {apoapsis/periapsis:.2f}x")</code></pre>
                         <span class="cell-status"></span>
                     </div>
                     <div class="output"></div>
+                </div>
+
+                <div class="widget">
+                    <label for="eccentricity-slider">
+                        🎚️ Orbital Eccentricity: <span id="ecc-value" class="value-display">0.30</span>
+                    </label>
+                    <input type="range" id="eccentricity-slider" 
+                           min="0" max="0.95" step="0.01" value="0.30">
                 </div>
 
                 <h2>1.5 Summary</h2>
@@ -2061,7 +2063,7 @@ print("Python environment ready!")
 
             // Handle messages from main thread
             self.onmessage = async (event) => {
-                const { type, runId, code } = event.data;
+                const { type, runId, code, name, value } = event.data;
 
                 if (type === 'init') {
                     try {
@@ -2072,6 +2074,10 @@ print("Python environment ready!")
                     }
                 } else if (type === 'run') {
                     await runCode(runId, code);
+                } else if (type === 'setvar') {
+                    // Set a variable in the Python namespace
+                    pyodide.globals.set(name, value);
+                    self.postMessage({ type: 'varset', name });
                 }
             };
         `;
@@ -2146,6 +2152,11 @@ print("Python environment ready!")
                 pendingRuns.set(runId, { resolve, reject, onOutput });
                 pyodideWorker.postMessage({ type: 'run', runId, code });
             });
+        }
+
+        async function setVariable(name, value) {
+            await initPyodide();
+            pyodideWorker.postMessage({ type: 'setvar', name, value });
         }
 
         async function stopExecution() {
@@ -2273,11 +2284,97 @@ print("Python environment ready!")
             runBtn.innerHTML = '<span class="icon">▶️</span> Run';
         }
 
+        /**
+         * ==========================================
+         * LIVE SYNTAX HIGHLIGHTING
+         * ==========================================
+         */
+
+        // Save cursor position in contenteditable element
+        function saveCursorPosition(element) {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return null;
+            
+            const range = selection.getRangeAt(0);
+            const preCaretRange = range.cloneRange();
+            preCaretRange.selectNodeContents(element);
+            preCaretRange.setEnd(range.startContainer, range.startOffset);
+            
+            return preCaretRange.toString().length;
+        }
+
+        // Restore cursor position in contenteditable element
+        function restoreCursorPosition(element, position) {
+            if (position === null) return;
+            
+            const selection = window.getSelection();
+            const range = document.createRange();
+            
+            let currentPos = 0;
+            let found = false;
+            
+            function traverseNodes(node) {
+                if (found) return;
+                
+                if (node.nodeType === Node.TEXT_NODE) {
+                    const nodeLength = node.textContent.length;
+                    if (currentPos + nodeLength >= position) {
+                        range.setStart(node, position - currentPos);
+                        range.collapse(true);
+                        found = true;
+                        return;
+                    }
+                    currentPos += nodeLength;
+                } else {
+                    for (const child of node.childNodes) {
+                        traverseNodes(child);
+                        if (found) return;
+                    }
+                }
+            }
+            
+            traverseNodes(element);
+            
+            if (found) {
+                selection.removeAllRanges();
+                selection.addRange(range);
+            } else {
+                // Position at end if not found
+                range.selectNodeContents(element);
+                range.collapse(false);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        }
+
+        // Debounced syntax highlighting
+        function createHighlighter(codeElement) {
+            let debounceTimer = null;
+            
+            return function highlightWithDebounce() {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    const cursorPos = saveCursorPosition(codeElement);
+                    const code = codeElement.textContent;
+                    
+                    // Re-highlight
+                    codeElement.textContent = code;
+                    Prism.highlightElement(codeElement);
+                    
+                    // Restore cursor
+                    restoreCursorPosition(codeElement, cursorPos);
+                }, 150);
+            };
+        }
+
         function setupCells() {
             document.querySelectorAll('.cell').forEach(cell => {
                 const runBtn = cell.querySelector('.run-btn');
                 const controls = cell.querySelector('.cell-controls');
                 const codeElement = cell.querySelector('code.language-python');
+                
+                // Create highlighter for this cell
+                const highlightCode = createHighlighter(codeElement);
                 
                 // Add stop button (hidden by default, shown when running)
                 const stopBtn = document.createElement('button');
@@ -2300,8 +2397,14 @@ print("Python environment ready!")
                     codeElement.contentEditable = isEditing ? 'true' : 'false';
                     if (isEditing) {
                         codeElement.focus();
+                    } else {
+                        // Re-highlight when done editing
+                        Prism.highlightElement(codeElement);
                     }
                 });
+                
+                // Live syntax highlighting while typing
+                codeElement.addEventListener('input', highlightCode);
                 
                 // Handle run button
                 runBtn.addEventListener('click', () => runCell(cell));
@@ -2333,14 +2436,13 @@ print("Python environment ready!")
                 eccSlider.addEventListener('change', async () => {
                     clearTimeout(eccDebounce);
                     eccDebounce = setTimeout(async () => {
-                        await initPyodide();
-                        pyodide.globals.set('eccentricity', parseFloat(eccSlider.value));
+                        await setVariable('eccentricity', parseFloat(eccSlider.value));
                         runCell(eccCell);
                     }, 150);
                 });
 
                 initPyodide().then(() => {
-                    pyodide.globals.set('eccentricity', parseFloat(eccSlider.value));
+                    setVariable('eccentricity', parseFloat(eccSlider.value));
                 });
             }
 
@@ -2359,14 +2461,13 @@ print("Python environment ready!")
                 tempSlider.addEventListener('change', async () => {
                     clearTimeout(tempDebounce);
                     tempDebounce = setTimeout(async () => {
-                        await initPyodide();
-                        pyodide.globals.set('temperature', parseFloat(tempSlider.value));
+                        await setVariable('temperature', parseFloat(tempSlider.value));
                         runCell(tempCell);
                     }, 150);
                 });
 
                 initPyodide().then(() => {
-                    pyodide.globals.set('temperature', parseFloat(tempSlider.value));
+                    setVariable('temperature', parseFloat(tempSlider.value));
                 });
             }
         }

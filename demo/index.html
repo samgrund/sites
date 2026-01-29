@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Physics Textbook — Orbital Mechanics</title>
+    <title>Interactive Astrophysics — A Computational Approach</title>
     
     <!-- ============================================
          PRISM.JS — Syntax Highlighting (CDN)
@@ -11,22 +11,34 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
     
     <!-- ============================================
-         EMBEDDED CSS — Textbook Typography & Layout
+         EMBEDDED CSS — Book Layout & Typography
          ============================================ -->
     <style>
-        /* === Base Typography === */
+        /* === CSS Variables === */
         :root {
+            --sidebar-width: 280px;
             --text-color: #2c3e50;
             --code-bg: #f8f9fa;
             --border-color: #e1e4e8;
             --accent-color: #3498db;
+            --accent-dark: #2980b9;
             --output-bg: #fefefe;
             --success-color: #27ae60;
             --error-color: #e74c3c;
+            --sidebar-bg: #1a252f;
+            --sidebar-text: #ecf0f1;
+            --sidebar-hover: #34495e;
+            --sidebar-active: #3498db;
         }
 
         * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
         }
 
         body {
@@ -34,33 +46,219 @@
             font-size: 18px;
             line-height: 1.8;
             color: var(--text-color);
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 40px 20px;
             background: #fff;
+            display: flex;
         }
 
-        h1 {
+        /* === Sidebar Navigation === */
+        .sidebar {
+            width: var(--sidebar-width);
+            min-width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 1.5em;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.2);
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.2em;
+            margin: 0;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .sidebar-header .subtitle {
+            font-size: 0.75em;
+            opacity: 0.7;
+            margin-top: 0.3em;
+        }
+
+        .sidebar nav {
+            flex: 1;
+            padding: 1em 0;
+        }
+
+        .nav-section {
+            margin-bottom: 0.5em;
+        }
+
+        .nav-section-title {
+            padding: 0.5em 1.5em;
+            font-size: 0.7em;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255,255,255,0.4);
+            font-weight: 600;
+        }
+
+        .nav-item {
+            display: block;
+            padding: 0.6em 1.5em 0.6em 2em;
+            color: var(--sidebar-text);
+            text-decoration: none;
+            font-size: 0.9em;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-item:hover {
+            background: var(--sidebar-hover);
+            border-left-color: rgba(255,255,255,0.3);
+        }
+
+        .nav-item.active {
+            background: rgba(52, 152, 219, 0.2);
+            border-left-color: var(--sidebar-active);
+            color: #fff;
+        }
+
+        .nav-item .chapter-num {
+            display: inline-block;
+            width: 1.8em;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .nav-subsection {
+            padding-left: 3.5em;
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+
+        .sidebar-footer {
+            padding: 1em 1.5em;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.75em;
+            opacity: 0.6;
+        }
+
+        /* === Mobile Menu Toggle === */
+        .menu-toggle {
+            display: none;
+            position: fixed;
+            top: 1em;
+            left: 1em;
+            z-index: 200;
+            background: var(--sidebar-bg);
+            color: #fff;
+            border: none;
+            padding: 0.5em 0.8em;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.2em;
+        }
+
+        /* === Main Content Area === */
+        .main-wrapper {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            min-height: 100vh;
+        }
+
+        .content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 40px 80px;
+        }
+
+        /* === Chapter Container === */
+        .chapter {
+            display: none;
+        }
+
+        .chapter.active {
+            display: block;
+        }
+
+        /* === Typography === */
+        h1.chapter-title {
             font-size: 2.4em;
-            margin-bottom: 0.3em;
-            border-bottom: 2px solid var(--accent-color);
+            margin-bottom: 0.2em;
+            border-bottom: 3px solid var(--accent-color);
             padding-bottom: 0.3em;
+            color: var(--text-color);
+        }
+
+        .chapter-subtitle {
+            font-size: 1.1em;
+            color: #7f8c8d;
+            margin-bottom: 2em;
+            font-style: italic;
         }
 
         h2 {
             font-size: 1.6em;
-            margin-top: 2em;
+            margin-top: 2.5em;
+            margin-bottom: 0.8em;
             color: var(--accent-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.3em;
         }
 
         h3 {
             font-size: 1.3em;
-            margin-top: 1.5em;
+            margin-top: 1.8em;
+            margin-bottom: 0.6em;
+            color: var(--text-color);
         }
 
         p {
             margin: 1em 0;
             text-align: justify;
+        }
+
+        ul, ol {
+            margin: 1em 0;
+            padding-left: 2em;
+        }
+
+        li {
+            margin: 0.5em 0;
+        }
+
+        blockquote {
+            margin: 1.5em 0;
+            padding: 1em 1.5em;
+            border-left: 4px solid var(--accent-color);
+            background: #f8f9fa;
+            font-style: italic;
+        }
+
+        /* === Info/Note Boxes === */
+        .note {
+            margin: 1.5em 0;
+            padding: 1em 1.5em;
+            border-radius: 6px;
+            background: #e8f4f8;
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .note-title {
+            font-weight: bold;
+            margin-bottom: 0.5em;
+            color: var(--accent-dark);
+        }
+
+        .warning {
+            background: #fef5e7;
+            border-left-color: #f39c12;
+        }
+
+        .warning .note-title {
+            color: #d68910;
         }
 
         /* === Code Cell Container === */
@@ -89,7 +287,6 @@
             margin: 0 !important;
         }
 
-        /* Override Prism's default styling to fit our theme */
         .cell pre[class*="language-"] {
             margin: 0;
             padding: 1em;
@@ -127,16 +324,12 @@
         }
 
         .run-btn:hover {
-            background: #2980b9;
+            background: var(--accent-dark);
         }
 
         .run-btn:disabled {
             background: #95a5a6;
             cursor: wait;
-        }
-
-        .run-btn .icon {
-            font-size: 1em;
         }
 
         .cell-status {
@@ -148,8 +341,6 @@
         .output {
             background: var(--output-bg);
             border-top: 1px solid var(--border-color);
-            padding: 0;
-            min-height: 0;
             font-family: "Fira Code", monospace;
             font-size: 0.85em;
             overflow-x: auto;
@@ -246,30 +437,121 @@
             color: #7f8c8d;
         }
 
-        /* === Math Styling (basic) === */
+        /* === Math Styling === */
         .math {
             font-style: italic;
+        }
+
+        .equation {
+            text-align: center;
+            font-size: 1.2em;
+            margin: 1.5em 0;
+            padding: 1em;
+            background: #f8f9fa;
+            border-radius: 4px;
         }
 
         sub, sup {
             font-size: 0.75em;
         }
 
+        /* === Chapter Navigation Footer === */
+        .chapter-nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 4em;
+            padding-top: 2em;
+            border-top: 2px solid var(--border-color);
+        }
+
+        .chapter-nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5em;
+            padding: 0.8em 1.5em;
+            background: var(--accent-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.9em;
+            cursor: pointer;
+            border: none;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+
+        .chapter-nav-btn:hover {
+            background: var(--accent-dark);
+        }
+
+        .chapter-nav-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .chapter-nav-btn.prev {
+            flex-direction: row-reverse;
+        }
+
         /* === Footer === */
         footer {
             margin-top: 4em;
-            padding-top: 2em;
+            padding: 2em;
             border-top: 1px solid var(--border-color);
             font-size: 0.85em;
             color: #7f8c8d;
             text-align: center;
+            background: #f8f9fa;
+        }
+
+        footer a {
+            color: var(--accent-color);
+        }
+
+        /* === Responsive Design === */
+        @media (max-width: 900px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .main-wrapper {
+                margin-left: 0;
+            }
+
+            .content {
+                padding: 60px 20px 40px;
+            }
+        }
+
+        /* === Print Styles === */
+        @media print {
+            .sidebar, .menu-toggle, .run-btn, .chapter-nav {
+                display: none;
+            }
+
+            .main-wrapper {
+                margin-left: 0;
+            }
+
+            .chapter {
+                display: block !important;
+                page-break-before: always;
+            }
         }
     </style>
 </head>
 <body>
 
     <!-- ============================================
-         LOADING OVERLAY — Shows while Pyodide loads
+         LOADING OVERLAY
          ============================================ -->
     <div id="loading-overlay">
         <div class="spinner"></div>
@@ -277,36 +559,181 @@
     </div>
 
     <!-- ============================================
-         MAIN CONTENT — Physics Textbook
+         MOBILE MENU TOGGLE
          ============================================ -->
-    <main>
-        <h1>🌍 Orbital Mechanics</h1>
-        <p><em>An Interactive Introduction to Celestial Motion</em></p>
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
 
-        <!-- ==========================================
-             SECTION 1: Gravitational Acceleration
-             ========================================== -->
-        <h2>1. Gravitational Acceleration</h2>
+    <!-- ============================================
+         SIDEBAR NAVIGATION
+         ============================================ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h1>📚 Interactive Astrophysics</h1>
+            <div class="subtitle">A Computational Approach</div>
+        </div>
         
-        <p>
-            The gravitational acceleration experienced by an object near a massive body is given by 
-            Newton's law of universal gravitation. At Earth's surface, we feel this as the familiar 
-            force that keeps us grounded. The acceleration due to gravity is calculated as:
-        </p>
-        
-        <p style="text-align: center; font-size: 1.2em;">
-            <span class="math">g = G × M / r²</span>
-        </p>
-        
-        <p>
-            Where <span class="math">G</span> is the gravitational constant, <span class="math">M</span> 
-            is the mass of the central body, and <span class="math">r</span> is the distance from its center. 
-            Let's compute this for Earth:
-        </p>
+        <nav>
+            <div class="nav-section">
+                <div class="nav-section-title">Preface</div>
+                <a class="nav-item active" data-chapter="intro">
+                    <span class="chapter-num">📖</span> Introduction
+                </a>
+            </div>
 
-        <!-- CODE CELL 1: Calculate gravitational acceleration -->
-        <div class="cell" data-cell-id="1">
-            <pre class="language-python"><code class="language-python"># Physical constants
+            <div class="nav-section">
+                <div class="nav-section-title">Part I: Fundamentals</div>
+                <a class="nav-item" data-chapter="ch1">
+                    <span class="chapter-num">1</span> Orbital Mechanics
+                </a>
+                <a class="nav-item" data-chapter="ch2">
+                    <span class="chapter-num">2</span> Escape Velocity
+                </a>
+                <a class="nav-item" data-chapter="ch3">
+                    <span class="chapter-num">3</span> Planetary Atmospheres
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Part II: Stellar Physics</div>
+                <a class="nav-item" data-chapter="ch4">
+                    <span class="chapter-num">4</span> Stellar Luminosity
+                </a>
+                <a class="nav-item" data-chapter="ch5">
+                    <span class="chapter-num">5</span> Hertzsprung-Russell Diagram
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Appendix</div>
+                <a class="nav-item" data-chapter="appendix">
+                    <span class="chapter-num">📋</span> Physical Constants
+                </a>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            🚀 Powered by Pyodide<br>
+            Python in WebAssembly
+        </div>
+    </aside>
+
+    <!-- ============================================
+         MAIN CONTENT AREA
+         ============================================ -->
+    <div class="main-wrapper">
+        <div class="content">
+
+            <!-- ==========================================
+                 INTRODUCTION
+                 ========================================== -->
+            <article class="chapter active" id="chapter-intro">
+                <h1 class="chapter-title">Welcome to Interactive Astrophysics</h1>
+                <p class="chapter-subtitle">Learning by Computing</p>
+
+                <p>
+                    Welcome to this interactive textbook on astrophysics! Unlike traditional textbooks, 
+                    this resource allows you to <strong>run Python code directly in your browser</strong> — 
+                    no installation required. Every calculation, every plot, and every simulation 
+                    can be executed and modified by you.
+                </p>
+
+                <div class="note">
+                    <div class="note-title">💡 How to Use This Book</div>
+                    <p>
+                        Throughout the chapters, you'll find code cells with a <strong>▶️ Run</strong> button. 
+                        Click the button to execute the Python code and see the results appear below. 
+                        Variables persist across cells within each chapter, allowing you to build up 
+                        complex analyses step by step.
+                    </p>
+                </div>
+
+                <h2>What You'll Learn</h2>
+
+                <p>This textbook covers fundamental topics in astrophysics:</p>
+
+                <ul>
+                    <li><strong>Orbital Mechanics</strong> — Kepler's laws, gravitational forces, and satellite motion</li>
+                    <li><strong>Escape Velocity</strong> — The physics of leaving planetary bodies</li>
+                    <li><strong>Planetary Atmospheres</strong> — Temperature profiles and atmospheric retention</li>
+                    <li><strong>Stellar Luminosity</strong> — The Stefan-Boltzmann law and stellar radiation</li>
+                    <li><strong>H-R Diagrams</strong> — Classifying stars by temperature and luminosity</li>
+                </ul>
+
+                <h2>Try It Now!</h2>
+
+                <p>
+                    Here's your first interactive code cell. Click <strong>Run</strong> to execute it 
+                    and verify that the Python environment is working:
+                </p>
+
+                <div class="cell" data-cell-id="intro-1">
+                    <pre class="language-python"><code class="language-python"># Welcome to Interactive Astrophysics!
+import numpy as np
+
+# A simple astronomical calculation
+speed_of_light = 299792458  # m/s
+distance_to_moon = 384400e3  # meters
+
+time_to_moon = distance_to_moon / speed_of_light
+
+print("🌙 Light Travel Time to the Moon")
+print(f"Distance: {distance_to_moon/1e3:,.0f} km")
+print(f"Time: {time_to_moon:.3f} seconds")
+print(f"\nThat's about {time_to_moon:.1f} seconds — try timing it next time!")
+</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <h2>Technical Notes</h2>
+
+                <p>
+                    This textbook uses <a href="https://pyodide.org" target="_blank">Pyodide</a> to run 
+                    Python code directly in your browser via WebAssembly. The first code execution may 
+                    take a few seconds as the Python environment loads, but subsequent runs will be fast.
+                </p>
+
+                <p>
+                    Available packages include <code>numpy</code> and <code>matplotlib</code>, which are 
+                    sufficient for most astrophysical calculations and visualizations.
+                </p>
+
+                <div class="chapter-nav">
+                    <button class="chapter-nav-btn prev" disabled>← Previous</button>
+                    <button class="chapter-nav-btn next" data-target="ch1">Chapter 1: Orbital Mechanics →</button>
+                </div>
+            </article>
+
+            <!-- ==========================================
+                 CHAPTER 1: ORBITAL MECHANICS
+                 ========================================== -->
+            <article class="chapter" id="chapter-ch1">
+                <h1 class="chapter-title">Chapter 1: Orbital Mechanics</h1>
+                <p class="chapter-subtitle">An Interactive Introduction to Celestial Motion</p>
+
+                <h2>1.1 Gravitational Acceleration</h2>
+                
+                <p>
+                    The gravitational acceleration experienced by an object near a massive body is given by 
+                    Newton's law of universal gravitation. At Earth's surface, we feel this as the familiar 
+                    force that keeps us grounded. The acceleration due to gravity is calculated as:
+                </p>
+                
+                <div class="equation">
+                    <span class="math">g = G × M / r²</span>
+                </div>
+                
+                <p>
+                    Where <span class="math">G</span> is the gravitational constant, <span class="math">M</span> 
+                    is the mass of the central body, and <span class="math">r</span> is the distance from its center. 
+                    Let's compute this for Earth:
+                </p>
+
+                <div class="cell" data-cell-id="ch1-1">
+                    <pre class="language-python"><code class="language-python"># Physical constants
 G = 6.67430e-11  # Gravitational constant (m³/kg/s²)
 M_earth = 5.972e24  # Earth's mass (kg)
 R_earth = 6.371e6  # Earth's radius (m)
@@ -316,42 +743,37 @@ g = G * M_earth / R_earth**2
 
 print(f"Gravitational acceleration at Earth's surface:")
 print(f"g = {g:.4f} m/s²")</code></pre>
-            <div class="cell-controls">
-                <button class="run-btn"><span class="icon">▶️</span> Run</button>
-                <span class="cell-status"></span>
-            </div>
-            <div class="output"></div>
-        </div>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
 
-        <p>
-            As expected, we get approximately 9.81 m/s², the value you've likely memorized! 
-            But gravity varies with altitude — astronauts on the International Space Station 
-            experience only about 90% of surface gravity.
-        </p>
+                <p>
+                    As expected, we get approximately 9.81 m/s², the value you've likely memorized! 
+                    But gravity varies with altitude — astronauts on the International Space Station 
+                    experience only about 90% of surface gravity.
+                </p>
 
-        <!-- ==========================================
-             SECTION 2: Orbital Period (Stateful Reuse)
-             ========================================== -->
-        <h2>2. Orbital Period</h2>
-        
-        <p>
-            Kepler's third law relates the orbital period <span class="math">T</span> to the 
-            semi-major axis <span class="math">a</span> of an orbit. For a satellite orbiting Earth, 
-            we can derive the period from our previously defined constants:
-        </p>
-        
-        <p style="text-align: center; font-size: 1.2em;">
-            <span class="math">T = 2π √(a³ / (G × M))</span>
-        </p>
-        
-        <p>
-            Notice how we'll reuse the variables <code>G</code> and <code>M_earth</code> 
-            that we defined in the previous code block — demonstrating persistent state:
-        </p>
+                <h2>1.2 Orbital Period</h2>
+                
+                <p>
+                    Kepler's third law relates the orbital period <span class="math">T</span> to the 
+                    semi-major axis <span class="math">a</span> of an orbit:
+                </p>
+                
+                <div class="equation">
+                    <span class="math">T = 2π √(a³ / (G × M))</span>
+                </div>
+                
+                <p>
+                    Notice how we'll reuse the variables <code>G</code> and <code>M_earth</code> 
+                    that we defined in the previous code block — demonstrating persistent state:
+                </p>
 
-        <!-- CODE CELL 2: Calculate orbital period (uses variables from Cell 1) -->
-        <div class="cell" data-cell-id="2">
-            <pre class="language-python"><code class="language-python">import numpy as np
+                <div class="cell" data-cell-id="ch1-2">
+                    <pre class="language-python"><code class="language-python">import numpy as np
 
 # Define orbital altitude (ISS orbits at ~400 km)
 altitude = 400e3  # meters above surface
@@ -368,46 +790,45 @@ print(f"Semi-major axis: {a/1000:.1f} km")
 print(f"Orbital period: {T:.1f} seconds")
 print(f"               = {T_minutes:.1f} minutes")
 print(f"\nThe ISS completes ~{24*60/T_minutes:.1f} orbits per day!")</code></pre>
-            <div class="cell-controls">
-                <button class="run-btn"><span class="icon">▶️</span> Run</button>
-                <span class="cell-status"></span>
-            </div>
-            <div class="output"></div>
-        </div>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
 
-        <p>
-            The International Space Station orbits Earth approximately every 90 minutes, 
-            giving astronauts the remarkable experience of witnessing 16 sunrises and sunsets each day!
-        </p>
+                <p>
+                    The International Space Station orbits Earth approximately every 90 minutes, 
+                    giving astronauts the remarkable experience of witnessing 16 sunrises and sunsets each day!
+                </p>
 
-        <!-- ==========================================
-             SECTION 3: Plotting an Orbit
-             ========================================== -->
-        <h2>3. Visualizing Orbital Trajectories</h2>
-        
-        <p>
-            Orbits aren't always circular. Johannes Kepler discovered that planetary orbits 
-            are ellipses, characterized by their <strong>eccentricity</strong> <span class="math">e</span>:
-        </p>
-        
-        <ul>
-            <li><span class="math">e = 0</span>: Perfect circle</li>
-            <li><span class="math">0 &lt; e &lt; 1</span>: Ellipse</li>
-            <li><span class="math">e = 1</span>: Parabola (escape trajectory)</li>
-        </ul>
-        
-        <p>
-            Let's visualize an elliptical orbit. The shape is described in polar coordinates 
-            by <span class="math">r(θ) = a(1 - e²) / (1 + e·cos(θ))</span>:
-        </p>
+                <h2>1.3 Visualizing Orbital Trajectories</h2>
+                
+                <p>
+                    Orbits aren't always circular. Johannes Kepler discovered that planetary orbits 
+                    are ellipses, characterized by their <strong>eccentricity</strong> <span class="math">e</span>:
+                </p>
+                
+                <ul>
+                    <li><span class="math">e = 0</span>: Perfect circle</li>
+                    <li><span class="math">0 &lt; e &lt; 1</span>: Ellipse</li>
+                    <li><span class="math">e = 1</span>: Parabola (escape trajectory)</li>
+                </ul>
+                
+                <p>
+                    Let's visualize an elliptical orbit using the polar equation:
+                </p>
 
-        <!-- CODE CELL 3: Plot orbital trajectory -->
-        <div class="cell" data-cell-id="3">
-            <pre class="language-python"><code class="language-python">import matplotlib.pyplot as plt
+                <div class="equation">
+                    <span class="math">r(θ) = a(1 - e²) / (1 + e·cos(θ))</span>
+                </div>
+
+                <div class="cell" data-cell-id="ch1-3">
+                    <pre class="language-python"><code class="language-python">import matplotlib.pyplot as plt
 
 # Orbital parameters
-a = 1.5e8  # Semi-major axis (km) - roughly Earth-Sun distance
-e = 0.5    # Eccentricity (elliptical orbit)
+a = 1.5e8  # Semi-major axis (km)
+e = 0.5    # Eccentricity
 
 # Generate orbit path
 theta = np.linspace(0, 2*np.pi, 500)
@@ -429,52 +850,35 @@ ax.grid(True, alpha=0.3)
 ax.legend(loc='upper right')
 plt.tight_layout()
 plt.show()</code></pre>
-            <div class="cell-controls">
-                <button class="run-btn"><span class="icon">▶️</span> Run</button>
-                <span class="cell-status"></span>
-            </div>
-            <div class="output"></div>
-        </div>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
 
-        <p>
-            The yellow dot represents the central body (like our Sun), located at one focus 
-            of the ellipse. Notice how the orbit comes closer to the star at one point 
-            (perihelion) and farther at the opposite point (aphelion).
-        </p>
+                <h2>1.4 Interactive Exploration</h2>
+                
+                <p>
+                    Now let's explore how eccentricity affects orbital shape interactively. 
+                    Use the slider below to change the eccentricity:
+                </p>
 
-        <!-- ==========================================
-             SECTION 4: Interactive Slider Widget
-             ========================================== -->
-        <h2>4. Interactive Exploration</h2>
-        
-        <p>
-            Now let's explore how eccentricity affects orbital shape interactively. 
-            Use the slider below to change the eccentricity and watch the orbit transform 
-            from circular to highly elliptical:
-        </p>
+                <div class="widget">
+                    <label for="eccentricity-slider">
+                        🎚️ Orbital Eccentricity: <span id="ecc-value" class="value-display">0.30</span>
+                    </label>
+                    <input type="range" id="eccentricity-slider" 
+                           min="0" max="0.95" step="0.01" value="0.30">
+                </div>
 
-        <!-- INTERACTIVE WIDGET -->
-        <div class="widget">
-            <label for="eccentricity-slider">
-                🎚️ Orbital Eccentricity: <span id="ecc-value" class="value-display">0.30</span>
-            </label>
-            <input type="range" id="eccentricity-slider" 
-                   min="0" max="0.95" step="0.01" value="0.30">
-        </div>
+                <div class="cell" data-cell-id="ch1-4" data-interactive="eccentricity">
+                    <pre class="language-python"><code class="language-python"># This cell updates when you move the slider!
+e_interactive = eccentricity  # Value from slider
 
-        <!-- CODE CELL 4: Interactive plot (auto-runs on slider change) -->
-        <div class="cell" data-cell-id="4" data-interactive="true">
-            <pre class="language-python"><code class="language-python"># This cell updates when you move the slider above!
-# The variable 'eccentricity' is injected from the slider
-
-# Use slider value (injected by JavaScript)
-e_interactive = eccentricity  # This variable is set by the slider
-
-# Generate orbit with current eccentricity
 theta = np.linspace(0, 2*np.pi, 500)
-a_interactive = 100  # Normalized semi-major axis
+a_interactive = 100
 
-# Handle edge case for very high eccentricity
 if e_interactive >= 0.99:
     e_interactive = 0.99
 
@@ -482,16 +886,12 @@ r = a_interactive * (1 - e_interactive**2) / (1 + e_interactive * np.cos(theta))
 x = r * np.cos(theta)
 y = r * np.sin(theta)
 
-# Calculate key orbital parameters
 periapsis = a_interactive * (1 - e_interactive)
 apoapsis = a_interactive * (1 + e_interactive)
 
-# Create visualization
 fig, ax = plt.subplots(figsize=(8, 6))
 ax.plot(x, y, 'b-', linewidth=2.5)
 ax.plot(0, 0, 'yo', markersize=15, label='Central Body', zorder=5)
-
-# Mark periapsis and apoapsis
 ax.plot(periapsis, 0, 'go', markersize=10, label=f'Periapsis: {periapsis:.1f}')
 ax.plot(-apoapsis, 0, 'ro', markersize=10, label=f'Apoapsis: {apoapsis:.1f}')
 
@@ -499,65 +899,859 @@ ax.set_xlim(-250, 150)
 ax.set_ylim(-150, 150)
 ax.set_xlabel('x (normalized units)', fontsize=11)
 ax.set_ylabel('y (normalized units)', fontsize=11)
-ax.set_title(f'Orbital Shape — Eccentricity e = {e_interactive:.2f}', 
-             fontsize=13, fontweight='bold')
+ax.set_title(f'Orbital Shape — Eccentricity e = {e_interactive:.2f}', fontsize=13, fontweight='bold')
 ax.set_aspect('equal')
 ax.grid(True, alpha=0.3)
 ax.legend(loc='upper left', fontsize=9)
-ax.axhline(y=0, color='gray', linestyle='--', alpha=0.3)
-ax.axvline(x=0, color='gray', linestyle='--', alpha=0.3)
-
 plt.tight_layout()
 plt.show()
 
 print(f"Eccentricity: {e_interactive:.2f}")
-print(f"Closest approach (periapsis): {periapsis:.1f} units")
-print(f"Farthest point (apoapsis): {apoapsis:.1f} units")
-print(f"Ratio (apoapsis/periapsis): {apoapsis/periapsis:.2f}x")</code></pre>
-            <div class="cell-controls">
-                <button class="run-btn"><span class="icon">▶️</span> Run</button>
-                <span class="cell-status"></span>
-            </div>
-            <div class="output"></div>
+print(f"Periapsis: {periapsis:.1f} | Apoapsis: {apoapsis:.1f}")
+print(f"Ratio: {apoapsis/periapsis:.2f}x")</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <h2>1.5 Summary</h2>
+                
+                <p>In this chapter, we've explored:</p>
+                
+                <ul>
+                    <li><strong>Gravitational acceleration</strong> — computed from fundamental constants</li>
+                    <li><strong>Orbital periods</strong> — derived using Kepler's laws</li>
+                    <li><strong>Orbital visualization</strong> — plotted elliptical trajectories</li>
+                    <li><strong>Interactive exploration</strong> — dynamically adjusted parameters</li>
+                </ul>
+
+                <div class="chapter-nav">
+                    <button class="chapter-nav-btn prev" data-target="intro">← Introduction</button>
+                    <button class="chapter-nav-btn next" data-target="ch2">Chapter 2: Escape Velocity →</button>
+                </div>
+            </article>
+
+            <!-- ==========================================
+                 CHAPTER 2: ESCAPE VELOCITY
+                 ========================================== -->
+            <article class="chapter" id="chapter-ch2">
+                <h1 class="chapter-title">Chapter 2: Escape Velocity</h1>
+                <p class="chapter-subtitle">Breaking Free from Gravitational Wells</p>
+
+                <h2>2.1 The Concept of Escape</h2>
+
+                <p>
+                    <strong>Escape velocity</strong> is the minimum speed an object needs to escape a 
+                    celestial body's gravitational influence without further propulsion. It's derived 
+                    by equating kinetic energy with gravitational potential energy:
+                </p>
+
+                <div class="equation">
+                    <span class="math">v<sub>esc</sub> = √(2GM/r)</span>
+                </div>
+
+                <p>
+                    Let's calculate escape velocities for various bodies in our solar system:
+                </p>
+
+                <div class="cell" data-cell-id="ch2-1">
+                    <pre class="language-python"><code class="language-python">import numpy as np
+
+# Gravitational constant
+G = 6.67430e-11  # m³/kg/s²
+
+# Celestial body data: (name, mass in kg, radius in m)
+bodies = [
+    ("Earth", 5.972e24, 6.371e6),
+    ("Moon", 7.342e22, 1.737e6),
+    ("Mars", 6.417e23, 3.390e6),
+    ("Jupiter", 1.898e27, 6.991e7),
+    ("Sun", 1.989e30, 6.957e8),
+]
+
+print("Escape Velocities in the Solar System")
+print("=" * 45)
+print(f"{'Body':<12} {'Mass (kg)':<12} {'v_esc (km/s)':<12}")
+print("-" * 45)
+
+escape_velocities = {}
+for name, mass, radius in bodies:
+    v_esc = np.sqrt(2 * G * mass / radius)
+    escape_velocities[name] = v_esc
+    print(f"{name:<12} {mass:.2e}    {v_esc/1000:.2f}")
+</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <div class="note">
+                    <div class="note-title">🚀 Practical Implications</div>
+                    <p>
+                        Earth's escape velocity of ~11.2 km/s is why rocket launches require such 
+                        enormous amounts of fuel. The Moon's low escape velocity (2.4 km/s) made 
+                        the Apollo return trips much easier than leaving Earth!
+                    </p>
+                </div>
+
+                <h2>2.2 Visualizing Escape Velocities</h2>
+
+                <p>
+                    Let's create a bar chart comparing escape velocities across different bodies:
+                </p>
+
+                <div class="cell" data-cell-id="ch2-2">
+                    <pre class="language-python"><code class="language-python">import matplotlib.pyplot as plt
+
+names = [b[0] for b in bodies]
+v_escs = [escape_velocities[name]/1000 for name in names]
+
+fig, ax = plt.subplots(figsize=(10, 6))
+
+colors = ['#3498db', '#95a5a6', '#e74c3c', '#f39c12', '#f1c40f']
+bars = ax.bar(names, v_escs, color=colors, edgecolor='black', linewidth=1.5)
+
+# Add value labels on bars
+for bar, v in zip(bars, v_escs):
+    height = bar.get_height()
+    ax.text(bar.get_x() + bar.get_width()/2., height,
+            f'{v:.1f}',
+            ha='center', va='bottom', fontsize=11, fontweight='bold')
+
+ax.set_ylabel('Escape Velocity (km/s)', fontsize=12)
+ax.set_title('Escape Velocities of Solar System Bodies', fontsize=14, fontweight='bold')
+ax.set_ylim(0, max(v_escs) * 1.15)
+ax.grid(axis='y', alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+print("Notice how the Sun's escape velocity is ~55x greater than Earth's!")</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <h2>2.3 Escape Velocity vs. Altitude</h2>
+
+                <p>
+                    Escape velocity decreases as you move away from a planet's surface. This is why 
+                    spacecraft often use multi-stage rockets — each stage operates at a different altitude 
+                    where the required velocity is lower.
+                </p>
+
+                <div class="cell" data-cell-id="ch2-3">
+                    <pre class="language-python"><code class="language-python"># Escape velocity as a function of altitude
+R_earth = 6.371e6
+M_earth = 5.972e24
+
+altitudes = np.linspace(0, 50000e3, 500)  # 0 to 50,000 km
+distances = R_earth + altitudes
+
+v_escape = np.sqrt(2 * G * M_earth / distances) / 1000  # km/s
+
+# Key altitudes
+key_alts = {
+    'Surface': 0,
+    'ISS (400 km)': 400e3,
+    'GPS (20,200 km)': 20200e3,
+    'Geostationary (35,786 km)': 35786e3,
+}
+
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.plot(altitudes/1e6, v_escape, 'b-', linewidth=2.5)
+
+# Mark key altitudes
+for label, alt in key_alts.items():
+    v = np.sqrt(2 * G * M_earth / (R_earth + alt)) / 1000
+    ax.plot(alt/1e6, v, 'ro', markersize=8)
+    ax.annotate(f'{label}\n{v:.2f} km/s', 
+                xy=(alt/1e6, v), 
+                xytext=(alt/1e6 + 3, v + 0.3),
+                fontsize=9, ha='left')
+
+ax.set_xlabel('Altitude (thousands of km)', fontsize=12)
+ax.set_ylabel('Escape Velocity (km/s)', fontsize=12)
+ax.set_title('Escape Velocity vs. Altitude (Earth)', fontsize=14, fontweight='bold')
+ax.grid(True, alpha=0.3)
+ax.set_xlim(0, 50)
+
+plt.tight_layout()
+plt.show()</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <div class="chapter-nav">
+                    <button class="chapter-nav-btn prev" data-target="ch1">← Chapter 1: Orbital Mechanics</button>
+                    <button class="chapter-nav-btn next" data-target="ch3">Chapter 3: Planetary Atmospheres →</button>
+                </div>
+            </article>
+
+            <!-- ==========================================
+                 CHAPTER 3: PLANETARY ATMOSPHERES
+                 ========================================== -->
+            <article class="chapter" id="chapter-ch3">
+                <h1 class="chapter-title">Chapter 3: Planetary Atmospheres</h1>
+                <p class="chapter-subtitle">Why Some Worlds Have Air and Others Don't</p>
+
+                <h2>3.1 Atmospheric Retention</h2>
+
+                <p>
+                    Whether a planet can retain an atmosphere depends on the competition between 
+                    <strong>thermal velocity</strong> of gas molecules and the planet's <strong>escape velocity</strong>. 
+                    If molecules move fast enough, they escape into space.
+                </p>
+
+                <p>
+                    The thermal velocity of gas molecules follows the Maxwell-Boltzmann distribution. 
+                    The root-mean-square velocity is:
+                </p>
+
+                <div class="equation">
+                    <span class="math">v<sub>rms</sub> = √(3kT/m)</span>
+                </div>
+
+                <p>
+                    Where <span class="math">k</span> is Boltzmann's constant, <span class="math">T</span> 
+                    is temperature, and <span class="math">m</span> is molecular mass.
+                </p>
+
+                <div class="cell" data-cell-id="ch3-1">
+                    <pre class="language-python"><code class="language-python">import numpy as np
+
+# Constants
+k_B = 1.380649e-23  # Boltzmann constant (J/K)
+u = 1.66054e-27     # Atomic mass unit (kg)
+
+# Gas molecules: (name, molecular mass in u)
+gases = {
+    'H₂ (Hydrogen)': 2,
+    'He (Helium)': 4,
+    'H₂O (Water)': 18,
+    'N₂ (Nitrogen)': 28,
+    'O₂ (Oxygen)': 32,
+    'CO₂ (Carbon dioxide)': 44,
+}
+
+# Temperature range (100K to 1000K)
+T = 288  # Earth's average surface temperature (K)
+
+print(f"Thermal velocities at T = {T} K (Earth's surface)")
+print("=" * 50)
+print(f"{'Gas':<25} {'Mass (u)':<10} {'v_rms (m/s)':<12}")
+print("-" * 50)
+
+v_thermal = {}
+for gas, mass in gases.items():
+    m = mass * u  # Convert to kg
+    v_rms = np.sqrt(3 * k_B * T / m)
+    v_thermal[gas] = v_rms
+    print(f"{gas:<25} {mass:<10} {v_rms:.0f}")
+
+print(f"\nEarth's escape velocity: 11,186 m/s")
+print("Gases with v_rms << v_esc are retained.")</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <h2>3.2 The Jeans Escape Parameter</h2>
+
+                <p>
+                    A useful criterion is that a planet retains a gas if its escape velocity is at least 
+                    6 times the thermal velocity (the "Jeans escape" criterion). Let's visualize which 
+                    planets can retain which gases:
+                </p>
+
+                <div class="cell" data-cell-id="ch3-2">
+                    <pre class="language-python"><code class="language-python">import matplotlib.pyplot as plt
+import numpy as np
+
+# Planet data: (name, escape_vel m/s, surface_temp K)
+planets = {
+    'Mercury': (4250, 440),
+    'Venus': (10360, 737),
+    'Earth': (11186, 288),
+    'Moon': (2380, 250),
+    'Mars': (5030, 210),
+    'Titan': (2640, 94),
+    'Jupiter': (59500, 165),
+}
+
+fig, ax = plt.subplots(figsize=(12, 8))
+
+# Plot each gas as a line (v_thermal vs T)
+T_range = np.linspace(50, 800, 100)
+colors = plt.cm.viridis(np.linspace(0, 1, len(gases)))
+
+for (gas, mass), color in zip(gases.items(), colors):
+    m = mass * u
+    v_rms = np.sqrt(3 * k_B * T_range / m)
+    ax.plot(T_range, v_rms, '-', color=color, linewidth=2, label=gas)
+
+# Plot each planet as a point (T, v_esc/6)
+for planet, (v_esc, T) in planets.items():
+    # Planet retains gas if v_esc/6 > v_thermal
+    ax.scatter(T, v_esc/6, s=150, zorder=5, edgecolors='black', linewidth=2)
+    ax.annotate(planet, (T, v_esc/6), xytext=(5, 5), textcoords='offset points', fontsize=9)
+
+ax.set_xlabel('Temperature (K)', fontsize=12)
+ax.set_ylabel('Velocity (m/s)', fontsize=12)
+ax.set_title('Atmospheric Retention: Gases vs. Planets\n(Planets retain gases below their marker)', 
+             fontsize=13, fontweight='bold')
+ax.legend(loc='upper left', fontsize=9)
+ax.set_xlim(50, 800)
+ax.set_ylim(0, 12000)
+ax.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+print("Planets can retain gases whose thermal velocity curves fall BELOW their marker.")</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <div class="note">
+                    <div class="note-title">🌍 Why Earth Has No Hydrogen Atmosphere</div>
+                    <p>
+                        Earth's marker on the plot is above the H₂ and He curves, meaning these light 
+                        gases escape to space. That's why our atmosphere is dominated by N₂ and O₂, 
+                        which are heavy enough to be retained. Jupiter, with its massive gravity, 
+                        retains even hydrogen — hence its thick hydrogen-helium atmosphere!
+                    </p>
+                </div>
+
+                <div class="chapter-nav">
+                    <button class="chapter-nav-btn prev" data-target="ch2">← Chapter 2: Escape Velocity</button>
+                    <button class="chapter-nav-btn next" data-target="ch4">Chapter 4: Stellar Luminosity →</button>
+                </div>
+            </article>
+
+            <!-- ==========================================
+                 CHAPTER 4: STELLAR LUMINOSITY
+                 ========================================== -->
+            <article class="chapter" id="chapter-ch4">
+                <h1 class="chapter-title">Chapter 4: Stellar Luminosity</h1>
+                <p class="chapter-subtitle">The Power Output of Stars</p>
+
+                <h2>4.1 The Stefan-Boltzmann Law</h2>
+
+                <p>
+                    Stars radiate energy as blackbodies. The total power output (luminosity) of a star 
+                    depends on its surface temperature and size according to the <strong>Stefan-Boltzmann law</strong>:
+                </p>
+
+                <div class="equation">
+                    <span class="math">L = 4πR²σT⁴</span>
+                </div>
+
+                <p>
+                    Where <span class="math">σ = 5.67 × 10⁻⁸ W/m²/K⁴</span> is the Stefan-Boltzmann constant. 
+                    Notice the <strong>fourth power</strong> dependence on temperature — a small increase in 
+                    temperature dramatically increases luminosity!
+                </p>
+
+                <div class="cell" data-cell-id="ch4-1">
+                    <pre class="language-python"><code class="language-python">import numpy as np
+
+# Constants
+sigma = 5.670374e-8  # Stefan-Boltzmann constant (W/m²/K⁴)
+L_sun = 3.828e26     # Solar luminosity (W)
+R_sun = 6.957e8      # Solar radius (m)
+T_sun = 5778         # Solar effective temperature (K)
+
+def stellar_luminosity(R, T):
+    """Calculate luminosity given radius and temperature."""
+    return 4 * np.pi * R**2 * sigma * T**4
+
+# Verify with the Sun
+L_calc = stellar_luminosity(R_sun, T_sun)
+
+print("Stefan-Boltzmann Law Verification")
+print("=" * 40)
+print(f"Solar radius: {R_sun:.3e} m")
+print(f"Solar temperature: {T_sun} K")
+print(f"Calculated luminosity: {L_calc:.3e} W")
+print(f"Actual solar luminosity: {L_sun:.3e} W")
+print(f"Agreement: {L_calc/L_sun * 100:.1f}%")</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <h2>4.2 Comparing Different Stars</h2>
+
+                <p>
+                    Stars vary enormously in size and temperature. Let's compare some well-known stars:
+                </p>
+
+                <div class="cell" data-cell-id="ch4-2">
+                    <pre class="language-python"><code class="language-python">import matplotlib.pyplot as plt
+
+# Star data: (name, radius/R_sun, temperature K, color)
+stars = [
+    ("Sun", 1.0, 5778, '#FFF44F'),
+    ("Sirius A", 1.71, 9940, '#CAE1FF'),
+    ("Betelgeuse", 764, 3500, '#FF6347'),
+    ("Rigel", 78.9, 12100, '#B0E0E6'),
+    ("Proxima Centauri", 0.154, 3042, '#FF4500'),
+    ("Vega", 2.36, 9602, '#ADD8E6'),
+]
+
+print("Stellar Luminosities (in Solar units)")
+print("=" * 55)
+print(f"{'Star':<18} {'R/R☉':<10} {'T (K)':<10} {'L/L☉':<12}")
+print("-" * 55)
+
+luminosities = []
+for name, r_ratio, temp, color in stars:
+    R = r_ratio * R_sun
+    L = stellar_luminosity(R, temp)
+    L_ratio = L / L_sun
+    luminosities.append((name, L_ratio, color))
+    print(f"{name:<18} {r_ratio:<10.3f} {temp:<10} {L_ratio:<12.1f}")
+
+print("\nNote: Betelgeuse is ~100,000x more luminous than the Sun!")</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <h2>4.3 Interactive: Temperature and Luminosity</h2>
+
+                <p>
+                    Use the slider to explore how temperature affects a Sun-sized star's luminosity. 
+                    Watch how the T⁴ dependence causes dramatic changes!
+                </p>
+
+                <div class="widget">
+                    <label for="temperature-slider">
+                        🌡️ Stellar Temperature: <span id="temp-value" class="value-display">5778</span> K
+                    </label>
+                    <input type="range" id="temperature-slider" 
+                           min="2500" max="30000" step="100" value="5778">
+                </div>
+
+                <div class="cell" data-cell-id="ch4-3" data-interactive="temperature">
+                    <pre class="language-python"><code class="language-python"># Interactive stellar luminosity
+T_star = temperature  # Value from slider
+
+# Calculate luminosity for a Sun-sized star
+L_star = stellar_luminosity(R_sun, T_star)
+L_ratio = L_star / L_sun
+
+# Peak wavelength (Wien's law)
+b = 2.898e-3  # Wien's constant (m·K)
+lambda_peak = b / T_star * 1e9  # Convert to nm
+
+# Determine color based on temperature
+if T_star < 3500:
+    color, star_type = '#FF4500', 'Red dwarf'
+elif T_star < 5000:
+    color, star_type = '#FFA500', 'Orange'
+elif T_star < 6000:
+    color, star_type = '#FFFF00', 'Yellow (Sun-like)'
+elif T_star < 7500:
+    color, star_type = '#FFFACD', 'Yellow-white'
+elif T_star < 10000:
+    color, star_type = '#FFFFFF', 'White'
+else:
+    color, star_type = '#CAE1FF', 'Blue-white'
+
+# Create visualization
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+
+# Left: Star visualization
+ax1.set_xlim(-2, 2)
+ax1.set_ylim(-2, 2)
+size = min(1.5, 0.3 + np.log10(L_ratio + 1) * 0.3)
+circle = plt.Circle((0, 0), size, color=color, ec='black', linewidth=2)
+ax1.add_patch(circle)
+ax1.set_aspect('equal')
+ax1.set_title(f'{star_type} Star\nT = {T_star} K', fontsize=13, fontweight='bold')
+ax1.axis('off')
+
+# Right: Luminosity comparison
+categories = ['This Star', 'Sun']
+values = [L_ratio, 1]
+bars = ax2.bar(categories, values, color=[color, '#FFF44F'], edgecolor='black', linewidth=2)
+ax2.set_ylabel('Luminosity (L☉)', fontsize=12)
+ax2.set_title('Luminosity Comparison', fontsize=13, fontweight='bold')
+
+for bar, v in zip(bars, values):
+    ax2.text(bar.get_x() + bar.get_width()/2., bar.get_height(),
+             f'{v:.2f}', ha='center', va='bottom', fontweight='bold')
+
+ax2.set_ylim(0, max(values) * 1.2)
+ax2.grid(axis='y', alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+print(f"Temperature: {T_star} K")
+print(f"Luminosity: {L_ratio:.2f} L☉")
+print(f"Peak wavelength: {lambda_peak:.0f} nm")
+print(f"Classification: {star_type}")</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <div class="chapter-nav">
+                    <button class="chapter-nav-btn prev" data-target="ch3">← Chapter 3: Planetary Atmospheres</button>
+                    <button class="chapter-nav-btn next" data-target="ch5">Chapter 5: H-R Diagram →</button>
+                </div>
+            </article>
+
+            <!-- ==========================================
+                 CHAPTER 5: HERTZSPRUNG-RUSSELL DIAGRAM
+                 ========================================== -->
+            <article class="chapter" id="chapter-ch5">
+                <h1 class="chapter-title">Chapter 5: The Hertzsprung-Russell Diagram</h1>
+                <p class="chapter-subtitle">Mapping the Stars</p>
+
+                <h2>5.1 Introduction</h2>
+
+                <p>
+                    The <strong>Hertzsprung-Russell (H-R) diagram</strong> is one of the most important 
+                    tools in stellar astronomy. It plots stars according to their luminosity versus 
+                    surface temperature (or spectral type), revealing distinct populations and 
+                    evolutionary stages.
+                </p>
+
+                <p>
+                    Most stars fall along the <strong>main sequence</strong>, a diagonal band where 
+                    hydrogen fusion powers the star. Giants, supergiants, and white dwarfs occupy 
+                    distinct regions representing different evolutionary stages.
+                </p>
+
+                <h2>5.2 Building an H-R Diagram</h2>
+
+                <div class="cell" data-cell-id="ch5-1">
+                    <pre class="language-python"><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+
+# Generate synthetic stellar data
+np.random.seed(42)
+
+# Main sequence stars (most common)
+n_ms = 200
+T_ms = 10**(np.random.uniform(3.5, 4.5, n_ms))  # 3000 - 30000 K
+# L ∝ T^4 for main sequence (roughly)
+L_ms = (T_ms / 5778)**4 * np.random.lognormal(0, 0.3, n_ms)
+
+# Red giants
+n_rg = 40
+T_rg = 10**(np.random.uniform(3.5, 3.7, n_rg))  # 3000-5000 K
+L_rg = 10**(np.random.uniform(1.5, 3, n_rg))    # 30-1000 L_sun
+
+# Supergiants
+n_sg = 15
+T_sg = 10**(np.random.uniform(3.5, 4.3, n_sg))
+L_sg = 10**(np.random.uniform(3.5, 5, n_sg))
+
+# White dwarfs
+n_wd = 30
+T_wd = 10**(np.random.uniform(3.9, 4.5, n_wd))  # Hot but dim
+L_wd = 10**(np.random.uniform(-3, -1, n_wd))
+
+# Create the H-R diagram
+fig, ax = plt.subplots(figsize=(10, 8))
+
+ax.scatter(T_ms, L_ms, c='#3498db', s=20, alpha=0.6, label='Main Sequence')
+ax.scatter(T_rg, L_rg, c='#e74c3c', s=50, alpha=0.7, label='Red Giants')
+ax.scatter(T_sg, L_sg, c='#f39c12', s=100, marker='*', label='Supergiants')
+ax.scatter(T_wd, L_wd, c='#9b59b6', s=30, alpha=0.7, label='White Dwarfs')
+
+# Add the Sun
+ax.scatter([5778], [1], c='yellow', s=200, edgecolors='black', 
+           linewidth=2, zorder=10, label='Sun')
+
+# Formatting
+ax.set_xlabel('Surface Temperature (K)', fontsize=12)
+ax.set_ylabel('Luminosity (L☉)', fontsize=12)
+ax.set_title('Hertzsprung-Russell Diagram', fontsize=14, fontweight='bold')
+
+# Log scales and inverted x-axis (hot stars on left)
+ax.set_xscale('log')
+ax.set_yscale('log')
+ax.invert_xaxis()
+ax.set_xlim(35000, 2500)
+ax.set_ylim(1e-4, 1e6)
+
+ax.legend(loc='upper right', fontsize=10)
+ax.grid(True, alpha=0.3, which='both')
+
+# Add spectral class labels
+spectral_temps = [30000, 10000, 7500, 6000, 5000, 3500, 2500]
+spectral_labels = ['O', 'B', 'A', 'F', 'G', 'K', 'M']
+ax2 = ax.twiny()
+ax2.set_xscale('log')
+ax2.set_xlim(ax.get_xlim())
+ax2.set_xticks(spectral_temps)
+ax2.set_xticklabels(spectral_labels)
+ax2.set_xlabel('Spectral Class', fontsize=11)
+
+plt.tight_layout()
+plt.show()
+
+print("The H-R diagram reveals distinct stellar populations!")
+print("Main sequence: Hydrogen-burning stars (where stars spend most of their lives)")
+print("Red giants: Evolved stars with expanded envelopes")
+print("White dwarfs: Stellar remnants (dead star cores)")</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <h2>5.3 Stellar Evolution on the H-R Diagram</h2>
+
+                <p>
+                    A star's position on the H-R diagram changes as it evolves. Let's trace 
+                    the evolutionary track of a Sun-like star:
+                </p>
+
+                <div class="cell" data-cell-id="ch5-2">
+                    <pre class="language-python"><code class="language-python">import matplotlib.pyplot as plt
+import numpy as np
+
+# Evolutionary track for a 1 solar mass star (simplified)
+# Format: (Temperature K, Luminosity L_sun, stage_name)
+evolution = [
+    (4500, 0.7, "Pre-main sequence"),
+    (5778, 1.0, "Main sequence (now)"),
+    (5600, 1.5, "Subgiant"),
+    (4500, 50, "Red giant branch"),
+    (4000, 200, "RGB tip"),
+    (5000, 50, "Horizontal branch"),
+    (4000, 500, "Asymptotic giant branch"),
+    (100000, 0.5, "Planetary nebula"),
+    (30000, 0.01, "White dwarf (hot)"),
+    (5000, 0.0001, "White dwarf (cool)"),
+]
+
+T = [e[0] for e in evolution]
+L = [e[1] for e in evolution]
+stages = [e[2] for e in evolution]
+
+fig, ax = plt.subplots(figsize=(11, 8))
+
+# Plot evolutionary track
+ax.plot(T, L, 'k-', linewidth=2, alpha=0.5)
+ax.scatter(T, L, c=range(len(T)), cmap='viridis', s=150, zorder=5, edgecolors='black')
+
+# Label stages
+for i, (t, l, stage) in enumerate(evolution):
+    offset = (15, 10) if i % 2 == 0 else (-15, -15)
+    ax.annotate(f"{i+1}. {stage}", (t, l), xytext=offset, 
+                textcoords='offset points', fontsize=8,
+                arrowprops=dict(arrowstyle='->', color='gray', alpha=0.5))
+
+# Highlight current Sun
+ax.scatter([5778], [1], c='yellow', s=300, edgecolors='red', 
+           linewidth=3, zorder=10, marker='*')
+
+ax.set_xlabel('Surface Temperature (K)', fontsize=12)
+ax.set_ylabel('Luminosity (L☉)', fontsize=12)
+ax.set_title('Evolutionary Track of a Sun-like Star', fontsize=14, fontweight='bold')
+
+ax.set_xscale('log')
+ax.set_yscale('log')
+ax.invert_xaxis()
+ax.set_xlim(200000, 2000)
+ax.set_ylim(1e-5, 1e4)
+ax.grid(True, alpha=0.3, which='both')
+
+plt.tight_layout()
+plt.show()
+
+print("Timeline of a Sun-like star:")
+print("• Main sequence: ~10 billion years")
+print("• Red giant phase: ~1 billion years")  
+print("• White dwarf: Cools forever (trillions of years)")</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <div class="note">
+                    <div class="note-title">⭐ The Sun's Fate</div>
+                    <p>
+                        In about 5 billion years, the Sun will exhaust its hydrogen fuel and expand 
+                        into a red giant, potentially engulfing Mercury and Venus. Eventually, it will 
+                        shed its outer layers as a planetary nebula and leave behind a white dwarf — 
+                        a dense stellar corpse about the size of Earth.
+                    </p>
+                </div>
+
+                <div class="chapter-nav">
+                    <button class="chapter-nav-btn prev" data-target="ch4">← Chapter 4: Stellar Luminosity</button>
+                    <button class="chapter-nav-btn next" data-target="appendix">Appendix: Constants →</button>
+                </div>
+            </article>
+
+            <!-- ==========================================
+                 APPENDIX: PHYSICAL CONSTANTS
+                 ========================================== -->
+            <article class="chapter" id="chapter-appendix">
+                <h1 class="chapter-title">Appendix: Physical Constants</h1>
+                <p class="chapter-subtitle">Reference Values for Astrophysical Calculations</p>
+
+                <h2>Fundamental Constants</h2>
+
+                <div class="cell" data-cell-id="app-1">
+                    <pre class="language-python"><code class="language-python">import numpy as np
+
+# Fundamental physical constants
+constants = {
+    "Gravitational constant G": (6.67430e-11, "m³/(kg·s²)"),
+    "Speed of light c": (299792458, "m/s"),
+    "Planck constant h": (6.62607e-34, "J·s"),
+    "Boltzmann constant k_B": (1.380649e-23, "J/K"),
+    "Stefan-Boltzmann σ": (5.670374e-8, "W/(m²·K⁴)"),
+    "Wien's constant b": (2.897772e-3, "m·K"),
+    "Atomic mass unit u": (1.66054e-27, "kg"),
+}
+
+print("FUNDAMENTAL PHYSICAL CONSTANTS")
+print("=" * 55)
+for name, (value, unit) in constants.items():
+    print(f"{name:<25} = {value:.5e} {unit}")
+</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <h2>Solar System Data</h2>
+
+                <div class="cell" data-cell-id="app-2">
+                    <pre class="language-python"><code class="language-python"># Solar and planetary data
+solar_data = {
+    "Solar mass M☉": (1.989e30, "kg"),
+    "Solar radius R☉": (6.957e8, "m"),
+    "Solar luminosity L☉": (3.828e26, "W"),
+    "Solar temperature T☉": (5778, "K"),
+    "Earth mass M⊕": (5.972e24, "kg"),
+    "Earth radius R⊕": (6.371e6, "m"),
+    "Astronomical Unit AU": (1.496e11, "m"),
+    "Light year ly": (9.461e15, "m"),
+    "Parsec pc": (3.086e16, "m"),
+}
+
+print("\nSOLAR SYSTEM & ASTRONOMICAL DATA")
+print("=" * 55)
+for name, (value, unit) in solar_data.items():
+    print(f"{name:<25} = {value:.3e} {unit}")
+
+print("\n" + "=" * 55)
+print("All values from IAU 2015 nominal values and CODATA 2018")</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <h2>Quick Reference Formulas</h2>
+
+                <div class="cell" data-cell-id="app-3">
+                    <pre class="language-python"><code class="language-python"># Useful astrophysical formulas as functions
+import numpy as np
+
+G = 6.67430e-11
+sigma = 5.670374e-8
+k_B = 1.380649e-23
+
+def escape_velocity(M, R):
+    """Escape velocity (m/s) given mass (kg) and radius (m)"""
+    return np.sqrt(2 * G * M / R)
+
+def orbital_period(a, M):
+    """Orbital period (s) given semi-major axis (m) and central mass (kg)"""
+    return 2 * np.pi * np.sqrt(a**3 / (G * M))
+
+def luminosity(R, T):
+    """Stellar luminosity (W) given radius (m) and temperature (K)"""
+    return 4 * np.pi * R**2 * sigma * T**4
+
+def thermal_velocity(T, m):
+    """RMS thermal velocity (m/s) given temperature (K) and mass (kg)"""
+    return np.sqrt(3 * k_B * T / m)
+
+def schwarzschild_radius(M):
+    """Schwarzschild radius (m) for a black hole of mass M (kg)"""
+    c = 299792458
+    return 2 * G * M / c**2
+
+# Demo calculations
+M_sun = 1.989e30
+R_sun = 6.957e8
+
+print("QUICK CALCULATIONS")
+print("=" * 50)
+print(f"Sun's Schwarzschild radius: {schwarzschild_radius(M_sun)/1000:.2f} km")
+print(f"Earth's orbital period: {orbital_period(1.496e11, M_sun)/86400:.2f} days")
+print(f"Sun's surface escape velocity: {escape_velocity(M_sun, R_sun)/1000:.1f} km/s")</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <div class="chapter-nav">
+                    <button class="chapter-nav-btn prev" data-target="ch5">← Chapter 5: H-R Diagram</button>
+                    <button class="chapter-nav-btn next" disabled>End of Book</button>
+                </div>
+            </article>
+
+            <!-- ==========================================
+                 FOOTER
+                 ========================================== -->
+            <footer>
+                <p>
+                    📚 <strong>Interactive Astrophysics</strong> — A Computational Approach
+                </p>
+                <p>
+                    🚀 Powered by <a href="https://pyodide.org" target="_blank">Pyodide</a> — 
+                    Python in the browser via WebAssembly
+                </p>
+                <p style="margin-top: 1em; font-size: 0.9em;">
+                    No installation required • Works offline after first load • Open source
+                </p>
+            </footer>
+
         </div>
-
-        <p>
-            As you increase eccentricity toward 1, the orbit becomes increasingly elongated. 
-            At <span class="math">e = 0</span>, you have a perfect circle where periapsis equals apoapsis. 
-            At high eccentricities, the orbiting body spends most of its time far from the central mass, 
-            then whips around quickly during close approach — this is why comets are only visible 
-            for short periods!
-        </p>
-
-        <h2>5. Summary</h2>
-        
-        <p>
-            In this interactive chapter, we've explored:
-        </p>
-        
-        <ul>
-            <li><strong>Gravitational acceleration</strong> — computed directly from fundamental constants</li>
-            <li><strong>Orbital periods</strong> — derived using Kepler's laws</li>
-            <li><strong>Orbital visualization</strong> — plotted elliptical trajectories</li>
-            <li><strong>Interactive exploration</strong> — dynamically adjusted eccentricity</li>
-        </ul>
-        
-        <p>
-            All computations ran directly in your browser using Python via WebAssembly — 
-            no server required! This demonstrates how modern web technologies enable 
-            rich, interactive scientific content.
-        </p>
-
-        <footer>
-            <p>
-                🚀 Powered by <a href="https://pyodide.org" target="_blank">Pyodide</a> — 
-                Python in the browser via WebAssembly
-            </p>
-            <p>
-                Interactive Physics Textbook Demo • No installation required
-            </p>
-        </footer>
-    </main>
+    </div>
 
     <!-- ============================================
          PRISM.JS — Syntax Highlighting (CDN)
@@ -566,40 +1760,96 @@ print(f"Ratio (apoapsis/periapsis): {apoapsis/periapsis:.2f}x")</code></pre>
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
 
     <!-- ============================================
-         PYODIDE CDN — Python Runtime via WebAssembly
+         PYODIDE CDN — Python Runtime
          ============================================ -->
     <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
 
     <!-- ============================================
-         EXECUTION ENGINE — JavaScript Glue Code
+         APPLICATION JAVASCRIPT
          ============================================ -->
     <script>
         /**
          * ==========================================
-         * PYODIDE EXECUTION ENGINE
+         * NAVIGATION SYSTEM
          * ==========================================
-         * 
-         * This script handles:
-         * 1. Loading and initializing Pyodide
-         * 2. Running Python code from inline cells
-         * 3. Capturing stdout/stderr output
-         * 4. Rendering matplotlib plots as inline images
-         * 5. Handling interactive slider widgets
          */
 
-        // Global state
+        // Navigate to a chapter
+        function navigateToChapter(chapterId) {
+            // Update active chapter
+            document.querySelectorAll('.chapter').forEach(ch => ch.classList.remove('active'));
+            const targetChapter = document.getElementById(`chapter-${chapterId}`);
+            if (targetChapter) {
+                targetChapter.classList.add('active');
+            }
+
+            // Update active nav item
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            const navItem = document.querySelector(`.nav-item[data-chapter="${chapterId}"]`);
+            if (navItem) {
+                navItem.classList.add('active');
+            }
+
+            // Scroll to top of content
+            document.querySelector('.content').scrollTop = 0;
+            window.scrollTo(0, 0);
+
+            // Close mobile sidebar
+            document.getElementById('sidebar').classList.remove('open');
+
+            // Update URL hash
+            history.pushState(null, '', `#${chapterId}`);
+        }
+
+        // Toggle mobile sidebar
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        // Setup navigation event listeners
+        function setupNavigation() {
+            // Sidebar nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const chapterId = item.getAttribute('data-chapter');
+                    navigateToChapter(chapterId);
+                });
+            });
+
+            // Chapter navigation buttons
+            document.querySelectorAll('.chapter-nav-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const target = btn.getAttribute('data-target');
+                    if (target) {
+                        navigateToChapter(target);
+                    }
+                });
+            });
+
+            // Handle browser back/forward
+            window.addEventListener('popstate', () => {
+                const hash = window.location.hash.slice(1) || 'intro';
+                navigateToChapter(hash);
+            });
+
+            // Load initial chapter from URL hash
+            const initialChapter = window.location.hash.slice(1) || 'intro';
+            navigateToChapter(initialChapter);
+        }
+
+        /**
+         * ==========================================
+         * PYODIDE EXECUTION ENGINE
+         * ==========================================
+         */
+
         let pyodide = null;
         let pyodideReady = false;
         let pyodideLoading = false;
 
-        /**
-         * Initialize Pyodide runtime
-         * Called on first code execution or page load
-         */
         async function initPyodide() {
             if (pyodideReady) return pyodide;
             if (pyodideLoading) {
-                // Wait for existing initialization
                 while (!pyodideReady) {
                     await new Promise(resolve => setTimeout(resolve, 100));
                 }
@@ -612,7 +1862,6 @@ print(f"Ratio (apoapsis/periapsis): {apoapsis/periapsis:.2f}x")</code></pre>
             try {
                 console.log('Loading Pyodide...');
                 
-                // Load Pyodide with minimal configuration (security: no network/filesystem)
                 pyodide = await loadPyodide({
                     indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
                 });
@@ -620,26 +1869,21 @@ print(f"Ratio (apoapsis/periapsis): {apoapsis/periapsis:.2f}x")</code></pre>
                 console.log('Pyodide loaded, installing packages...');
                 overlay.querySelector('p').textContent = 'Installing matplotlib...';
 
-                // Install required packages
                 await pyodide.loadPackage(['numpy', 'matplotlib']);
 
-                console.log('Configuring matplotlib for inline display...');
+                console.log('Configuring matplotlib...');
                 overlay.querySelector('p').textContent = 'Configuring environment...';
 
-                // Configure matplotlib for non-interactive backend
-                // This setup captures figures as base64 PNG images
                 await pyodide.runPythonAsync(`
 import matplotlib
-matplotlib.use('Agg')  # Non-interactive backend
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import io
 import base64
 
-# Store figures for retrieval
 _figure_data = []
 
-# Override plt.show() to capture figure data
 _original_show = plt.show
 
 def _custom_show(*args, **kwargs):
@@ -666,8 +1910,6 @@ print("Python environment ready!")
 
                 pyodideReady = true;
                 console.log('Pyodide fully initialized!');
-
-                // Hide loading overlay
                 overlay.classList.add('hidden');
 
             } catch (error) {
@@ -680,11 +1922,6 @@ print("Python environment ready!")
             return pyodide;
         }
 
-        /**
-         * Execute Python code and capture output
-         * @param {string} code - Python code to execute
-         * @returns {Object} - {stdout, stderr, figures, error}
-         */
         async function runPython(code) {
             const py = await initPyodide();
             
@@ -693,23 +1930,12 @@ print("Python environment ready!")
             let error = null;
             let figures = [];
 
-            // Redirect stdout
-            py.setStdout({
-                batched: (text) => { stdout += text; }
-            });
-
-            // Redirect stderr
-            py.setStderr({
-                batched: (text) => { stderr += text; }
-            });
+            py.setStdout({ batched: (text) => { stdout += text; } });
+            py.setStderr({ batched: (text) => { stderr += text; } });
 
             try {
-                // Execute the code
                 await py.runPythonAsync(code);
-                
-                // Retrieve any generated figures
                 figures = py.runPython('_get_figures()').toJs();
-                
             } catch (e) {
                 error = e.message;
                 stderr += error;
@@ -718,15 +1944,9 @@ print("Python environment ready!")
             return { stdout, stderr, figures, error };
         }
 
-        /**
-         * Render execution output to a cell's output div
-         * @param {HTMLElement} outputDiv - The output container
-         * @param {Object} result - Result from runPython()
-         */
         function renderOutput(outputDiv, result) {
             outputDiv.innerHTML = '';
 
-            // Render stdout
             if (result.stdout && result.stdout.trim()) {
                 const pre = document.createElement('pre');
                 pre.className = 'stdout';
@@ -734,7 +1954,6 @@ print("Python environment ready!")
                 outputDiv.appendChild(pre);
             }
 
-            // Render figures (matplotlib plots)
             if (result.figures && result.figures.length > 0) {
                 result.figures.forEach(imgData => {
                     const img = document.createElement('img');
@@ -744,7 +1963,6 @@ print("Python environment ready!")
                 });
             }
 
-            // Render stderr/errors
             if (result.stderr && result.stderr.trim()) {
                 const pre = document.createElement('pre');
                 pre.className = 'stderr';
@@ -753,10 +1971,6 @@ print("Python environment ready!")
             }
         }
 
-        /**
-         * Handle Run button click for a code cell
-         * @param {HTMLElement} cell - The cell container element
-         */
         async function runCell(cell) {
             const codeElement = cell.querySelector('code.language-python');
             const outputDiv = cell.querySelector('.output');
@@ -765,7 +1979,6 @@ print("Python environment ready!")
             
             const code = codeElement.textContent;
 
-            // Update UI to show running state
             runBtn.disabled = true;
             runBtn.innerHTML = '<span class="icon">⏳</span> Running...';
             statusSpan.textContent = '';
@@ -787,72 +2000,89 @@ print("Python environment ready!")
                 statusSpan.style.color = '#e74c3c';
             }
 
-            // Reset button state
             runBtn.disabled = false;
             runBtn.innerHTML = '<span class="icon">▶️</span> Run';
         }
 
-        /**
-         * Set up event listeners for all code cells
-         */
         function setupCells() {
-            const cells = document.querySelectorAll('.cell');
-            
-            cells.forEach(cell => {
+            document.querySelectorAll('.cell').forEach(cell => {
                 const runBtn = cell.querySelector('.run-btn');
-                
-                runBtn.addEventListener('click', () => {
-                    runCell(cell);
+                runBtn.addEventListener('click', () => runCell(cell));
+            });
+        }
+
+        /**
+         * ==========================================
+         * INTERACTIVE WIDGETS
+         * ==========================================
+         */
+
+        function setupWidgets() {
+            // Eccentricity slider (Chapter 1)
+            const eccSlider = document.getElementById('eccentricity-slider');
+            const eccValue = document.getElementById('ecc-value');
+            const eccCell = document.querySelector('.cell[data-interactive="eccentricity"]');
+
+            if (eccSlider && eccCell) {
+                let eccDebounce = null;
+
+                eccSlider.addEventListener('input', () => {
+                    eccValue.textContent = parseFloat(eccSlider.value).toFixed(2);
                 });
-            });
+
+                eccSlider.addEventListener('change', async () => {
+                    clearTimeout(eccDebounce);
+                    eccDebounce = setTimeout(async () => {
+                        await initPyodide();
+                        pyodide.globals.set('eccentricity', parseFloat(eccSlider.value));
+                        runCell(eccCell);
+                    }, 150);
+                });
+
+                initPyodide().then(() => {
+                    pyodide.globals.set('eccentricity', parseFloat(eccSlider.value));
+                });
+            }
+
+            // Temperature slider (Chapter 4)
+            const tempSlider = document.getElementById('temperature-slider');
+            const tempValue = document.getElementById('temp-value');
+            const tempCell = document.querySelector('.cell[data-interactive="temperature"]');
+
+            if (tempSlider && tempCell) {
+                let tempDebounce = null;
+
+                tempSlider.addEventListener('input', () => {
+                    tempValue.textContent = tempSlider.value;
+                });
+
+                tempSlider.addEventListener('change', async () => {
+                    clearTimeout(tempDebounce);
+                    tempDebounce = setTimeout(async () => {
+                        await initPyodide();
+                        pyodide.globals.set('temperature', parseFloat(tempSlider.value));
+                        runCell(tempCell);
+                    }, 150);
+                });
+
+                initPyodide().then(() => {
+                    pyodide.globals.set('temperature', parseFloat(tempSlider.value));
+                });
+            }
         }
 
         /**
-         * Set up the eccentricity slider widget
+         * ==========================================
+         * INITIALIZATION
+         * ==========================================
          */
-        function setupSlider() {
-            const slider = document.getElementById('eccentricity-slider');
-            const valueDisplay = document.getElementById('ecc-value');
-            const interactiveCell = document.querySelector('.cell[data-interactive="true"]');
-            
-            if (!slider || !interactiveCell) return;
 
-            let debounceTimer = null;
-
-            slider.addEventListener('input', () => {
-                const value = parseFloat(slider.value).toFixed(2);
-                valueDisplay.textContent = value;
-            });
-
-            slider.addEventListener('change', async () => {
-                // Debounce to avoid too many executions
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(async () => {
-                    const value = parseFloat(slider.value);
-                    
-                    // Inject the eccentricity value into Python namespace
-                    await initPyodide();
-                    pyodide.globals.set('eccentricity', value);
-                    
-                    // Run the interactive cell
-                    runCell(interactiveCell);
-                }, 150);
-            });
-
-            // Initialize the Python variable
-            initPyodide().then(() => {
-                pyodide.globals.set('eccentricity', parseFloat(slider.value));
-            });
-        }
-
-        /**
-         * Initialize everything when DOM is ready
-         */
         document.addEventListener('DOMContentLoaded', () => {
+            setupNavigation();
             setupCells();
-            setupSlider();
+            setupWidgets();
             
-            // Start loading Pyodide immediately in background
+            // Start loading Pyodide in background
             initPyodide().catch(err => {
                 console.error('Background Pyodide init failed:', err);
             });

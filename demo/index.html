@@ -341,6 +341,33 @@
             cursor: wait;
         }
 
+        .stop-btn {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            font-size: 0.85em;
+            font-family: inherit;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .stop-btn:hover {
+            background: #c0392b;
+        }
+
+        .cell.running .run-btn {
+            display: none;
+        }
+
+        .cell.running .stop-btn {
+            display: inline-flex;
+        }
+
         .cell-status {
             font-size: 0.8em;
             color: #7f8c8d;
@@ -391,6 +418,39 @@
 
         .cell:not(.edit-mode) pre {
             border-left: 3px solid transparent;
+        }
+
+        /* Running state visual feedback */
+        .cell.running {
+            position: relative;
+        }
+
+        .cell.running::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #3498db, #9b59b6, #3498db);
+            background-size: 200% 100%;
+            animation: running-indicator 1.5s ease-in-out infinite;
+        }
+
+        @keyframes running-indicator {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .cell.running .run-btn {
+            background: #f0f0f0;
+            cursor: wait;
+        }
+
+        /* Streaming output styling */
+        .output .stdout {
+            max-height: 400px;
+            overflow-y: auto;
         }
 
         /* === Output Area === */
@@ -1895,50 +1955,58 @@ print(f"Sun's surface escape velocity: {escape_velocity(M_sun, R_sun)/1000:.1f} 
 
         /**
          * ==========================================
-         * PYODIDE EXECUTION ENGINE
+         * PYODIDE WEB WORKER ENGINE
          * ==========================================
+         * Runs Python in a separate thread to prevent UI freezing
+         * and enable streaming output.
          */
 
-        let pyodide = null;
-        let pyodideReady = false;
-        let pyodideLoading = false;
+        let pyodideWorker = null;
+        let workerReady = false;
+        let workerLoading = false;
+        let currentRunId = 0;
+        let pendingRuns = new Map(); // runId -> { resolve, reject, onOutput }
 
-        async function initPyodide() {
-            if (pyodideReady) return pyodide;
-            if (pyodideLoading) {
-                while (!pyodideReady) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
-                return pyodide;
-            }
+        // Create the worker code as a blob URL (keeps everything in one file)
+        const workerCode = `
+            let pyodide = null;
 
-            pyodideLoading = true;
-            const overlay = document.getElementById('loading-overlay');
-
-            try {
-                console.log('Loading Pyodide...');
+            async function initPyodide() {
+                importScripts('https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js');
                 
                 pyodide = await loadPyodide({
                     indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
                 });
 
-                console.log('Pyodide loaded, installing packages...');
-                overlay.querySelector('p').textContent = 'Installing matplotlib...';
-
+                self.postMessage({ type: 'status', message: 'Installing matplotlib...' });
                 await pyodide.loadPackage(['numpy', 'matplotlib']);
 
-                console.log('Configuring matplotlib...');
-                overlay.querySelector('p').textContent = 'Configuring environment...';
-
-                await pyodide.runPythonAsync(`
+                self.postMessage({ type: 'status', message: 'Configuring environment...' });
+                
+                await pyodide.runPythonAsync(\`
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import io
 import base64
+import sys
+import time
 
 _figure_data = []
+_original_sleep = time.sleep
+
+# Override time.sleep to yield to event loop periodically
+def _async_sleep(seconds):
+    import js
+    _original_sleep(min(seconds, 0.1))
+    # For longer sleeps, we chunk it up
+    remaining = seconds - 0.1
+    while remaining > 0:
+        _original_sleep(min(remaining, 0.1))
+        remaining -= 0.1
+
+# Note: Can't fully replace time.sleep in sync code, but we set up streaming stdout
 
 _original_show = plt.show
 
@@ -1962,70 +2030,140 @@ def _get_figures():
     return figs
 
 print("Python environment ready!")
-                `);
+                \`);
 
-                pyodideReady = true;
-                console.log('Pyodide fully initialized!');
-                overlay.classList.add('hidden');
-
-            } catch (error) {
-                console.error('Failed to initialize Pyodide:', error);
-                overlay.querySelector('p').textContent = 'Failed to load Python. Please refresh.';
-                overlay.querySelector('.spinner').style.display = 'none';
-                throw error;
+                return pyodide;
             }
 
-            return pyodide;
-        }
+            async function runCode(runId, code) {
+                let figures = [];
 
-        async function runPython(code) {
-            const py = await initPyodide();
-            
-            let stdout = '';
-            let stderr = '';
-            let error = null;
-            let figures = [];
-
-            // Use batched mode and add newlines back (batched strips trailing newlines)
-            py.setStdout({ batched: (text) => { stdout += text + '\n'; } });
-            py.setStderr({ batched: (text) => { stderr += text + '\n'; } });
-
-            try {
-                await py.runPythonAsync(code);
-                figures = py.runPython('_get_figures()').toJs();
-            } catch (e) {
-                error = e.message;
-                stderr += error;
-            }
-
-            return { stdout, stderr, figures, error };
-        }
-
-        function renderOutput(outputDiv, result) {
-            outputDiv.innerHTML = '';
-
-            if (result.stdout && result.stdout.trim()) {
-                const pre = document.createElement('pre');
-                pre.className = 'stdout';
-                pre.textContent = result.stdout;
-                outputDiv.appendChild(pre);
-            }
-
-            if (result.figures && result.figures.length > 0) {
-                result.figures.forEach(imgData => {
-                    const img = document.createElement('img');
-                    img.src = `data:image/png;base64,${imgData}`;
-                    img.alt = 'Matplotlib figure';
-                    outputDiv.appendChild(img);
+                // Set up streaming stdout/stderr
+                pyodide.setStdout({ 
+                    batched: (text) => { 
+                        self.postMessage({ type: 'stdout', runId, text: text + '\\n' }); 
+                    } 
                 });
+                pyodide.setStderr({ 
+                    batched: (text) => { 
+                        self.postMessage({ type: 'stderr', runId, text: text + '\\n' }); 
+                    } 
+                });
+
+                try {
+                    await pyodide.runPythonAsync(code);
+                    figures = pyodide.runPython('_get_figures()').toJs();
+                    self.postMessage({ type: 'complete', runId, figures: Array.from(figures), error: null });
+                } catch (e) {
+                    self.postMessage({ type: 'complete', runId, figures: [], error: e.message });
+                }
             }
 
-            if (result.stderr && result.stderr.trim()) {
-                const pre = document.createElement('pre');
-                pre.className = 'stderr';
-                pre.textContent = result.stderr;
-                outputDiv.appendChild(pre);
+            // Handle messages from main thread
+            self.onmessage = async (event) => {
+                const { type, runId, code } = event.data;
+
+                if (type === 'init') {
+                    try {
+                        await initPyodide();
+                        self.postMessage({ type: 'ready' });
+                    } catch (e) {
+                        self.postMessage({ type: 'error', message: e.message });
+                    }
+                } else if (type === 'run') {
+                    await runCode(runId, code);
+                }
+            };
+        `;
+
+        function createWorker() {
+            const blob = new Blob([workerCode], { type: 'application/javascript' });
+            const workerUrl = URL.createObjectURL(blob);
+            const worker = new Worker(workerUrl);
+            
+            worker.onmessage = (event) => {
+                const { type, runId, text, figures, error, message } = event.data;
+                
+                if (type === 'ready') {
+                    workerReady = true;
+                    const overlay = document.getElementById('loading-overlay');
+                    overlay.classList.add('hidden');
+                } else if (type === 'status') {
+                    const overlay = document.getElementById('loading-overlay');
+                    overlay.querySelector('p').textContent = message;
+                } else if (type === 'stdout' || type === 'stderr') {
+                    const pending = pendingRuns.get(runId);
+                    if (pending && pending.onOutput) {
+                        pending.onOutput(type, text);
+                    }
+                } else if (type === 'complete') {
+                    const pending = pendingRuns.get(runId);
+                    if (pending) {
+                        pendingRuns.delete(runId);
+                        pending.resolve({ figures, error });
+                    }
+                } else if (type === 'error') {
+                    console.error('Worker error:', message);
+                    const overlay = document.getElementById('loading-overlay');
+                    overlay.querySelector('p').textContent = 'Failed to load Python. Please refresh.';
+                    overlay.querySelector('.spinner').style.display = 'none';
+                }
+            };
+
+            worker.onerror = (e) => {
+                console.error('Worker error:', e);
+            };
+
+            return worker;
+        }
+
+        async function initPyodide() {
+            if (workerReady) return;
+            if (workerLoading) {
+                while (!workerReady) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                return;
             }
+
+            workerLoading = true;
+            console.log('Starting Pyodide worker...');
+            
+            pyodideWorker = createWorker();
+            pyodideWorker.postMessage({ type: 'init' });
+
+            // Wait for ready
+            while (!workerReady) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            console.log('Pyodide worker ready!');
+        }
+
+        function runPython(code, onOutput) {
+            return new Promise((resolve, reject) => {
+                const runId = ++currentRunId;
+                pendingRuns.set(runId, { resolve, reject, onOutput });
+                pyodideWorker.postMessage({ type: 'run', runId, code });
+            });
+        }
+
+        async function stopExecution() {
+            // Terminate the worker to stop execution
+            if (pyodideWorker) {
+                pyodideWorker.terminate();
+                pyodideWorker = null;
+            }
+            
+            // Reject all pending runs
+            for (const [runId, pending] of pendingRuns) {
+                pending.resolve({ figures: [], error: 'Execution stopped by user' });
+            }
+            pendingRuns.clear();
+            
+            // Reset state - worker will be recreated on next run
+            workerReady = false;
+            workerLoading = false;
         }
 
         async function runCell(cell) {
@@ -2036,20 +2174,72 @@ print("Python environment ready!")
             
             const code = codeElement.textContent;
 
+            // Disable run button and show running state
             runBtn.disabled = true;
             runBtn.innerHTML = '<span class="icon">⏳</span> Running...';
             statusSpan.textContent = '';
-            outputDiv.innerHTML = '<pre style="color: #7f8c8d;">Executing...</pre>';
+            cell.classList.add('running');
+            
+            // Clear output and prepare streaming containers
+            outputDiv.innerHTML = '';
+            const stdoutPre = document.createElement('pre');
+            stdoutPre.className = 'stdout';
+            stdoutPre.style.display = 'none';
+            outputDiv.appendChild(stdoutPre);
+            
+            const stderrPre = document.createElement('pre');
+            stderrPre.className = 'stderr';
+            stderrPre.style.display = 'none';
+            outputDiv.appendChild(stderrPre);
 
             const startTime = performance.now();
 
+            // Streaming output callback
+            const onOutput = (type, text) => {
+                if (type === 'stdout') {
+                    stdoutPre.style.display = 'block';
+                    stdoutPre.textContent += text;
+                    // Auto-scroll to bottom
+                    stdoutPre.scrollTop = stdoutPre.scrollHeight;
+                } else if (type === 'stderr') {
+                    stderrPre.style.display = 'block';
+                    stderrPre.textContent += text;
+                }
+            };
+
             try {
-                const result = await runPython(code);
+                await initPyodide();
+                const result = await runPython(code, onOutput);
                 const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
                 
-                renderOutput(outputDiv, result);
-                statusSpan.textContent = `✓ Completed in ${elapsed}s`;
-                statusSpan.style.color = '#27ae60';
+                // Add figures after streaming output
+                if (result.figures && result.figures.length > 0) {
+                    result.figures.forEach(imgData => {
+                        const img = document.createElement('img');
+                        img.src = `data:image/png;base64,${imgData}`;
+                        img.alt = 'Matplotlib figure';
+                        outputDiv.appendChild(img);
+                    });
+                }
+
+                // Add error to stderr if present
+                if (result.error) {
+                    stderrPre.style.display = 'block';
+                    stderrPre.textContent += result.error;
+                    statusSpan.textContent = `✗ Error after ${elapsed}s`;
+                    statusSpan.style.color = '#e74c3c';
+                } else {
+                    statusSpan.textContent = `✓ Completed in ${elapsed}s`;
+                    statusSpan.style.color = '#27ae60';
+                }
+                
+                // Clean up empty output elements
+                if (!stdoutPre.textContent.trim()) {
+                    stdoutPre.remove();
+                }
+                if (!stderrPre.textContent.trim()) {
+                    stderrPre.remove();
+                }
                 
             } catch (e) {
                 outputDiv.innerHTML = `<pre class="stderr">Execution error: ${e.message}</pre>`;
@@ -2057,6 +2247,28 @@ print("Python environment ready!")
                 statusSpan.style.color = '#e74c3c';
             }
 
+            cell.classList.remove('running');
+            runBtn.disabled = false;
+            runBtn.innerHTML = '<span class="icon">▶️</span> Run';
+        }
+
+        async function stopCell(cell) {
+            const outputDiv = cell.querySelector('.output');
+            const statusSpan = cell.querySelector('.cell-status');
+            const runBtn = cell.querySelector('.run-btn');
+            
+            await stopExecution();
+            
+            // Add stopped message to output
+            const stoppedMsg = document.createElement('pre');
+            stoppedMsg.className = 'stderr';
+            stoppedMsg.textContent = '⚠ Execution stopped by user';
+            outputDiv.appendChild(stoppedMsg);
+            
+            statusSpan.textContent = '⚠ Stopped';
+            statusSpan.style.color = '#f39c12';
+            
+            cell.classList.remove('running');
             runBtn.disabled = false;
             runBtn.innerHTML = '<span class="icon">▶️</span> Run';
         }
@@ -2066,6 +2278,13 @@ print("Python environment ready!")
                 const runBtn = cell.querySelector('.run-btn');
                 const controls = cell.querySelector('.cell-controls');
                 const codeElement = cell.querySelector('code.language-python');
+                
+                // Add stop button (hidden by default, shown when running)
+                const stopBtn = document.createElement('button');
+                stopBtn.className = 'stop-btn';
+                stopBtn.title = 'Stop execution';
+                stopBtn.innerHTML = '<span class="icon">⏹</span> Stop';
+                runBtn.insertAdjacentElement('afterend', stopBtn);
                 
                 // Add edit button with clear labels
                 const editBtn = document.createElement('button');
@@ -2086,6 +2305,9 @@ print("Python environment ready!")
                 
                 // Handle run button
                 runBtn.addEventListener('click', () => runCell(cell));
+                
+                // Handle stop button
+                stopBtn.addEventListener('click', () => stopCell(cell));
             });
         }
 

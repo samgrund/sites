@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Physics Textbook — Orbital Mechanics</title>
+    
+    <!-- ============================================
+         PRISM.JS — Syntax Highlighting (CDN)
+         ============================================ -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
+    
+    <!-- ============================================
+         EMBEDDED CSS — Textbook Typography & Layout
+         ============================================ -->
+    <style>
+        /* === Base Typography === */
+        :root {
+            --text-color: #2c3e50;
+            --code-bg: #f8f9fa;
+            --border-color: #e1e4e8;
+            --accent-color: #3498db;
+            --output-bg: #fefefe;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+            font-size: 18px;
+            line-height: 1.8;
+            color: var(--text-color);
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #fff;
+        }
+
+        h1 {
+            font-size: 2.4em;
+            margin-bottom: 0.3em;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 0.3em;
+        }
+
+        h2 {
+            font-size: 1.6em;
+            margin-top: 2em;
+            color: var(--accent-color);
+        }
+
+        h3 {
+            font-size: 1.3em;
+            margin-top: 1.5em;
+        }
+
+        p {
+            margin: 1em 0;
+            text-align: justify;
+        }
+
+        /* === Code Cell Container === */
+        .cell {
+            margin: 1.5em 0;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+            background: var(--code-bg);
+        }
+
+        .cell pre {
+            margin: 0;
+            padding: 1em;
+            overflow-x: auto;
+        }
+
+        .cell code {
+            font-family: "Fira Code", "Source Code Pro", Consolas, Monaco, monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+            display: block;
+            white-space: pre;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        /* Override Prism's default styling to fit our theme */
+        .cell pre[class*="language-"] {
+            margin: 0;
+            padding: 1em;
+            background: var(--code-bg);
+            border-radius: 0;
+        }
+
+        .cell code[class*="language-"] {
+            text-shadow: none;
+        }
+
+        /* === Run Button === */
+        .cell-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: #eef1f4;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .run-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            font-size: 0.85em;
+            font-family: inherit;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .run-btn:hover {
+            background: #2980b9;
+        }
+
+        .run-btn:disabled {
+            background: #95a5a6;
+            cursor: wait;
+        }
+
+        .run-btn .icon {
+            font-size: 1em;
+        }
+
+        .cell-status {
+            font-size: 0.8em;
+            color: #7f8c8d;
+        }
+
+        /* === Output Area === */
+        .output {
+            background: var(--output-bg);
+            border-top: 1px solid var(--border-color);
+            padding: 0;
+            min-height: 0;
+            font-family: "Fira Code", monospace;
+            font-size: 0.85em;
+            overflow-x: auto;
+        }
+
+        .output:empty {
+            display: none;
+        }
+
+        .output pre {
+            margin: 0;
+            padding: 1em;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .output .stdout {
+            color: var(--text-color);
+        }
+
+        .output .stderr {
+            color: var(--error-color);
+        }
+
+        .output img {
+            max-width: 100%;
+            display: block;
+            margin: 1em auto;
+        }
+
+        /* === Interactive Widget === */
+        .widget {
+            margin: 1.5em 0;
+            padding: 1.2em;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+
+        .widget label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 0.5em;
+        }
+
+        .widget input[type="range"] {
+            width: 100%;
+            margin: 0.5em 0;
+        }
+
+        .widget .value-display {
+            font-family: monospace;
+            font-size: 1.1em;
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        /* === Loading Indicator === */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.3s;
+        }
+
+        #loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        #loading-overlay p {
+            margin-top: 1em;
+            color: #7f8c8d;
+        }
+
+        /* === Math Styling (basic) === */
+        .math {
+            font-style: italic;
+        }
+
+        sub, sup {
+            font-size: 0.75em;
+        }
+
+        /* === Footer === */
+        footer {
+            margin-top: 4em;
+            padding-top: 2em;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.85em;
+            color: #7f8c8d;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============================================
+         LOADING OVERLAY — Shows while Pyodide loads
+         ============================================ -->
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p>Loading Python environment...</p>
+    </div>
+
+    <!-- ============================================
+         MAIN CONTENT — Physics Textbook
+         ============================================ -->
+    <main>
+        <h1>🌍 Orbital Mechanics</h1>
+        <p><em>An Interactive Introduction to Celestial Motion</em></p>
+
+        <!-- ==========================================
+             SECTION 1: Gravitational Acceleration
+             ========================================== -->
+        <h2>1. Gravitational Acceleration</h2>
+        
+        <p>
+            The gravitational acceleration experienced by an object near a massive body is given by 
+            Newton's law of universal gravitation. At Earth's surface, we feel this as the familiar 
+            force that keeps us grounded. The acceleration due to gravity is calculated as:
+        </p>
+        
+        <p style="text-align: center; font-size: 1.2em;">
+            <span class="math">g = G × M / r²</span>
+        </p>
+        
+        <p>
+            Where <span class="math">G</span> is the gravitational constant, <span class="math">M</span> 
+            is the mass of the central body, and <span class="math">r</span> is the distance from its center. 
+            Let's compute this for Earth:
+        </p>
+
+        <!-- CODE CELL 1: Calculate gravitational acceleration -->
+        <div class="cell" data-cell-id="1">
+            <pre class="language-python"><code class="language-python"># Physical constants
+G = 6.67430e-11  # Gravitational constant (m³/kg/s²)
+M_earth = 5.972e24  # Earth's mass (kg)
+R_earth = 6.371e6  # Earth's radius (m)
+
+# Calculate surface gravity
+g = G * M_earth / R_earth**2
+
+print(f"Gravitational acceleration at Earth's surface:")
+print(f"g = {g:.4f} m/s²")</code></pre>
+            <div class="cell-controls">
+                <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                <span class="cell-status"></span>
+            </div>
+            <div class="output"></div>
+        </div>
+
+        <p>
+            As expected, we get approximately 9.81 m/s², the value you've likely memorized! 
+            But gravity varies with altitude — astronauts on the International Space Station 
+            experience only about 90% of surface gravity.
+        </p>
+
+        <!-- ==========================================
+             SECTION 2: Orbital Period (Stateful Reuse)
+             ========================================== -->
+        <h2>2. Orbital Period</h2>
+        
+        <p>
+            Kepler's third law relates the orbital period <span class="math">T</span> to the 
+            semi-major axis <span class="math">a</span> of an orbit. For a satellite orbiting Earth, 
+            we can derive the period from our previously defined constants:
+        </p>
+        
+        <p style="text-align: center; font-size: 1.2em;">
+            <span class="math">T = 2π √(a³ / (G × M))</span>
+        </p>
+        
+        <p>
+            Notice how we'll reuse the variables <code>G</code> and <code>M_earth</code> 
+            that we defined in the previous code block — demonstrating persistent state:
+        </p>
+
+        <!-- CODE CELL 2: Calculate orbital period (uses variables from Cell 1) -->
+        <div class="cell" data-cell-id="2">
+            <pre class="language-python"><code class="language-python">import numpy as np
+
+# Define orbital altitude (ISS orbits at ~400 km)
+altitude = 400e3  # meters above surface
+a = R_earth + altitude  # Semi-major axis
+
+# Calculate orbital period using Kepler's third law
+T = 2 * np.pi * np.sqrt(a**3 / (G * M_earth))
+
+# Convert to minutes
+T_minutes = T / 60
+
+print(f"Orbital parameters for altitude = {altitude/1000:.0f} km:")
+print(f"Semi-major axis: {a/1000:.1f} km")
+print(f"Orbital period: {T:.1f} seconds")
+print(f"               = {T_minutes:.1f} minutes")
+print(f"\nThe ISS completes ~{24*60/T_minutes:.1f} orbits per day!")</code></pre>
+            <div class="cell-controls">
+                <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                <span class="cell-status"></span>
+            </div>
+            <div class="output"></div>
+        </div>
+
+        <p>
+            The International Space Station orbits Earth approximately every 90 minutes, 
+            giving astronauts the remarkable experience of witnessing 16 sunrises and sunsets each day!
+        </p>
+
+        <!-- ==========================================
+             SECTION 3: Plotting an Orbit
+             ========================================== -->
+        <h2>3. Visualizing Orbital Trajectories</h2>
+        
+        <p>
+            Orbits aren't always circular. Johannes Kepler discovered that planetary orbits 
+            are ellipses, characterized by their <strong>eccentricity</strong> <span class="math">e</span>:
+        </p>
+        
+        <ul>
+            <li><span class="math">e = 0</span>: Perfect circle</li>
+            <li><span class="math">0 &lt; e &lt; 1</span>: Ellipse</li>
+            <li><span class="math">e = 1</span>: Parabola (escape trajectory)</li>
+        </ul>
+        
+        <p>
+            Let's visualize an elliptical orbit. The shape is described in polar coordinates 
+            by <span class="math">r(θ) = a(1 - e²) / (1 + e·cos(θ))</span>:
+        </p>
+
+        <!-- CODE CELL 3: Plot orbital trajectory -->
+        <div class="cell" data-cell-id="3">
+            <pre class="language-python"><code class="language-python">import matplotlib.pyplot as plt
+
+# Orbital parameters
+a = 1.5e8  # Semi-major axis (km) - roughly Earth-Sun distance
+e = 0.5    # Eccentricity (elliptical orbit)
+
+# Generate orbit path
+theta = np.linspace(0, 2*np.pi, 500)
+r = a * (1 - e**2) / (1 + e * np.cos(theta))
+
+# Convert to Cartesian coordinates
+x = r * np.cos(theta)
+y = r * np.sin(theta)
+
+# Create the plot
+fig, ax = plt.subplots(figsize=(8, 8))
+ax.plot(x, y, 'b-', linewidth=2, label=f'Orbit (e={e})')
+ax.plot(0, 0, 'yo', markersize=20, label='Central body (Star)')
+ax.set_xlabel('x (km)', fontsize=12)
+ax.set_ylabel('y (km)', fontsize=12)
+ax.set_title('Elliptical Orbit', fontsize=14, fontweight='bold')
+ax.set_aspect('equal')
+ax.grid(True, alpha=0.3)
+ax.legend(loc='upper right')
+plt.tight_layout()
+plt.show()</code></pre>
+            <div class="cell-controls">
+                <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                <span class="cell-status"></span>
+            </div>
+            <div class="output"></div>
+        </div>
+
+        <p>
+            The yellow dot represents the central body (like our Sun), located at one focus 
+            of the ellipse. Notice how the orbit comes closer to the star at one point 
+            (perihelion) and farther at the opposite point (aphelion).
+        </p>
+
+        <!-- ==========================================
+             SECTION 4: Interactive Slider Widget
+             ========================================== -->
+        <h2>4. Interactive Exploration</h2>
+        
+        <p>
+            Now let's explore how eccentricity affects orbital shape interactively. 
+            Use the slider below to change the eccentricity and watch the orbit transform 
+            from circular to highly elliptical:
+        </p>
+
+        <!-- INTERACTIVE WIDGET -->
+        <div class="widget">
+            <label for="eccentricity-slider">
+                🎚️ Orbital Eccentricity: <span id="ecc-value" class="value-display">0.30</span>
+            </label>
+            <input type="range" id="eccentricity-slider" 
+                   min="0" max="0.95" step="0.01" value="0.30">
+        </div>
+
+        <!-- CODE CELL 4: Interactive plot (auto-runs on slider change) -->
+        <div class="cell" data-cell-id="4" data-interactive="true">
+            <pre class="language-python"><code class="language-python"># This cell updates when you move the slider above!
+# The variable 'eccentricity' is injected from the slider
+
+# Use slider value (injected by JavaScript)
+e_interactive = eccentricity  # This variable is set by the slider
+
+# Generate orbit with current eccentricity
+theta = np.linspace(0, 2*np.pi, 500)
+a_interactive = 100  # Normalized semi-major axis
+
+# Handle edge case for very high eccentricity
+if e_interactive >= 0.99:
+    e_interactive = 0.99
+
+r = a_interactive * (1 - e_interactive**2) / (1 + e_interactive * np.cos(theta))
+x = r * np.cos(theta)
+y = r * np.sin(theta)
+
+# Calculate key orbital parameters
+periapsis = a_interactive * (1 - e_interactive)
+apoapsis = a_interactive * (1 + e_interactive)
+
+# Create visualization
+fig, ax = plt.subplots(figsize=(8, 6))
+ax.plot(x, y, 'b-', linewidth=2.5)
+ax.plot(0, 0, 'yo', markersize=15, label='Central Body', zorder=5)
+
+# Mark periapsis and apoapsis
+ax.plot(periapsis, 0, 'go', markersize=10, label=f'Periapsis: {periapsis:.1f}')
+ax.plot(-apoapsis, 0, 'ro', markersize=10, label=f'Apoapsis: {apoapsis:.1f}')
+
+ax.set_xlim(-250, 150)
+ax.set_ylim(-150, 150)
+ax.set_xlabel('x (normalized units)', fontsize=11)
+ax.set_ylabel('y (normalized units)', fontsize=11)
+ax.set_title(f'Orbital Shape — Eccentricity e = {e_interactive:.2f}', 
+             fontsize=13, fontweight='bold')
+ax.set_aspect('equal')
+ax.grid(True, alpha=0.3)
+ax.legend(loc='upper left', fontsize=9)
+ax.axhline(y=0, color='gray', linestyle='--', alpha=0.3)
+ax.axvline(x=0, color='gray', linestyle='--', alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+print(f"Eccentricity: {e_interactive:.2f}")
+print(f"Closest approach (periapsis): {periapsis:.1f} units")
+print(f"Farthest point (apoapsis): {apoapsis:.1f} units")
+print(f"Ratio (apoapsis/periapsis): {apoapsis/periapsis:.2f}x")</code></pre>
+            <div class="cell-controls">
+                <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                <span class="cell-status"></span>
+            </div>
+            <div class="output"></div>
+        </div>
+
+        <p>
+            As you increase eccentricity toward 1, the orbit becomes increasingly elongated. 
+            At <span class="math">e = 0</span>, you have a perfect circle where periapsis equals apoapsis. 
+            At high eccentricities, the orbiting body spends most of its time far from the central mass, 
+            then whips around quickly during close approach — this is why comets are only visible 
+            for short periods!
+        </p>
+
+        <h2>5. Summary</h2>
+        
+        <p>
+            In this interactive chapter, we've explored:
+        </p>
+        
+        <ul>
+            <li><strong>Gravitational acceleration</strong> — computed directly from fundamental constants</li>
+            <li><strong>Orbital periods</strong> — derived using Kepler's laws</li>
+            <li><strong>Orbital visualization</strong> — plotted elliptical trajectories</li>
+            <li><strong>Interactive exploration</strong> — dynamically adjusted eccentricity</li>
+        </ul>
+        
+        <p>
+            All computations ran directly in your browser using Python via WebAssembly — 
+            no server required! This demonstrates how modern web technologies enable 
+            rich, interactive scientific content.
+        </p>
+
+        <footer>
+            <p>
+                🚀 Powered by <a href="https://pyodide.org" target="_blank">Pyodide</a> — 
+                Python in the browser via WebAssembly
+            </p>
+            <p>
+                Interactive Physics Textbook Demo • No installation required
+            </p>
+        </footer>
+    </main>
+
+    <!-- ============================================
+         PRISM.JS — Syntax Highlighting (CDN)
+         ============================================ -->
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+
+    <!-- ============================================
+         PYODIDE CDN — Python Runtime via WebAssembly
+         ============================================ -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+
+    <!-- ============================================
+         EXECUTION ENGINE — JavaScript Glue Code
+         ============================================ -->
+    <script>
+        /**
+         * ==========================================
+         * PYODIDE EXECUTION ENGINE
+         * ==========================================
+         * 
+         * This script handles:
+         * 1. Loading and initializing Pyodide
+         * 2. Running Python code from inline cells
+         * 3. Capturing stdout/stderr output
+         * 4. Rendering matplotlib plots as inline images
+         * 5. Handling interactive slider widgets
+         */
+
+        // Global state
+        let pyodide = null;
+        let pyodideReady = false;
+        let pyodideLoading = false;
+
+        /**
+         * Initialize Pyodide runtime
+         * Called on first code execution or page load
+         */
+        async function initPyodide() {
+            if (pyodideReady) return pyodide;
+            if (pyodideLoading) {
+                // Wait for existing initialization
+                while (!pyodideReady) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                return pyodide;
+            }
+
+            pyodideLoading = true;
+            const overlay = document.getElementById('loading-overlay');
+
+            try {
+                console.log('Loading Pyodide...');
+                
+                // Load Pyodide with minimal configuration (security: no network/filesystem)
+                pyodide = await loadPyodide({
+                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
+                });
+
+                console.log('Pyodide loaded, installing packages...');
+                overlay.querySelector('p').textContent = 'Installing matplotlib...';
+
+                // Install required packages
+                await pyodide.loadPackage(['numpy', 'matplotlib']);
+
+                console.log('Configuring matplotlib for inline display...');
+                overlay.querySelector('p').textContent = 'Configuring environment...';
+
+                // Configure matplotlib for non-interactive backend
+                // This setup captures figures as base64 PNG images
+                await pyodide.runPythonAsync(`
+import matplotlib
+matplotlib.use('Agg')  # Non-interactive backend
+import matplotlib.pyplot as plt
+import numpy as np
+import io
+import base64
+
+# Store figures for retrieval
+_figure_data = []
+
+# Override plt.show() to capture figure data
+_original_show = plt.show
+
+def _custom_show(*args, **kwargs):
+    global _figure_data
+    fig = plt.gcf()
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png', dpi=100, bbox_inches='tight', 
+                facecolor='white', edgecolor='none')
+    buf.seek(0)
+    img_data = base64.b64encode(buf.read()).decode('utf-8')
+    _figure_data.append(img_data)
+    plt.close(fig)
+
+plt.show = _custom_show
+
+def _get_figures():
+    global _figure_data
+    figs = _figure_data.copy()
+    _figure_data = []
+    return figs
+
+print("Python environment ready!")
+                `);
+
+                pyodideReady = true;
+                console.log('Pyodide fully initialized!');
+
+                // Hide loading overlay
+                overlay.classList.add('hidden');
+
+            } catch (error) {
+                console.error('Failed to initialize Pyodide:', error);
+                overlay.querySelector('p').textContent = 'Failed to load Python. Please refresh.';
+                overlay.querySelector('.spinner').style.display = 'none';
+                throw error;
+            }
+
+            return pyodide;
+        }
+
+        /**
+         * Execute Python code and capture output
+         * @param {string} code - Python code to execute
+         * @returns {Object} - {stdout, stderr, figures, error}
+         */
+        async function runPython(code) {
+            const py = await initPyodide();
+            
+            let stdout = '';
+            let stderr = '';
+            let error = null;
+            let figures = [];
+
+            // Redirect stdout
+            py.setStdout({
+                batched: (text) => { stdout += text; }
+            });
+
+            // Redirect stderr
+            py.setStderr({
+                batched: (text) => { stderr += text; }
+            });
+
+            try {
+                // Execute the code
+                await py.runPythonAsync(code);
+                
+                // Retrieve any generated figures
+                figures = py.runPython('_get_figures()').toJs();
+                
+            } catch (e) {
+                error = e.message;
+                stderr += error;
+            }
+
+            return { stdout, stderr, figures, error };
+        }
+
+        /**
+         * Render execution output to a cell's output div
+         * @param {HTMLElement} outputDiv - The output container
+         * @param {Object} result - Result from runPython()
+         */
+        function renderOutput(outputDiv, result) {
+            outputDiv.innerHTML = '';
+
+            // Render stdout
+            if (result.stdout && result.stdout.trim()) {
+                const pre = document.createElement('pre');
+                pre.className = 'stdout';
+                pre.textContent = result.stdout;
+                outputDiv.appendChild(pre);
+            }
+
+            // Render figures (matplotlib plots)
+            if (result.figures && result.figures.length > 0) {
+                result.figures.forEach(imgData => {
+                    const img = document.createElement('img');
+                    img.src = `data:image/png;base64,${imgData}`;
+                    img.alt = 'Matplotlib figure';
+                    outputDiv.appendChild(img);
+                });
+            }
+
+            // Render stderr/errors
+            if (result.stderr && result.stderr.trim()) {
+                const pre = document.createElement('pre');
+                pre.className = 'stderr';
+                pre.textContent = result.stderr;
+                outputDiv.appendChild(pre);
+            }
+        }
+
+        /**
+         * Handle Run button click for a code cell
+         * @param {HTMLElement} cell - The cell container element
+         */
+        async function runCell(cell) {
+            const codeElement = cell.querySelector('code.language-python');
+            const outputDiv = cell.querySelector('.output');
+            const runBtn = cell.querySelector('.run-btn');
+            const statusSpan = cell.querySelector('.cell-status');
+            
+            const code = codeElement.textContent;
+
+            // Update UI to show running state
+            runBtn.disabled = true;
+            runBtn.innerHTML = '<span class="icon">⏳</span> Running...';
+            statusSpan.textContent = '';
+            outputDiv.innerHTML = '<pre style="color: #7f8c8d;">Executing...</pre>';
+
+            const startTime = performance.now();
+
+            try {
+                const result = await runPython(code);
+                const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+                
+                renderOutput(outputDiv, result);
+                statusSpan.textContent = `✓ Completed in ${elapsed}s`;
+                statusSpan.style.color = '#27ae60';
+                
+            } catch (e) {
+                outputDiv.innerHTML = `<pre class="stderr">Execution error: ${e.message}</pre>`;
+                statusSpan.textContent = '✗ Failed';
+                statusSpan.style.color = '#e74c3c';
+            }
+
+            // Reset button state
+            runBtn.disabled = false;
+            runBtn.innerHTML = '<span class="icon">▶️</span> Run';
+        }
+
+        /**
+         * Set up event listeners for all code cells
+         */
+        function setupCells() {
+            const cells = document.querySelectorAll('.cell');
+            
+            cells.forEach(cell => {
+                const runBtn = cell.querySelector('.run-btn');
+                
+                runBtn.addEventListener('click', () => {
+                    runCell(cell);
+                });
+            });
+        }
+
+        /**
+         * Set up the eccentricity slider widget
+         */
+        function setupSlider() {
+            const slider = document.getElementById('eccentricity-slider');
+            const valueDisplay = document.getElementById('ecc-value');
+            const interactiveCell = document.querySelector('.cell[data-interactive="true"]');
+            
+            if (!slider || !interactiveCell) return;
+
+            let debounceTimer = null;
+
+            slider.addEventListener('input', () => {
+                const value = parseFloat(slider.value).toFixed(2);
+                valueDisplay.textContent = value;
+            });
+
+            slider.addEventListener('change', async () => {
+                // Debounce to avoid too many executions
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(async () => {
+                    const value = parseFloat(slider.value);
+                    
+                    // Inject the eccentricity value into Python namespace
+                    await initPyodide();
+                    pyodide.globals.set('eccentricity', value);
+                    
+                    // Run the interactive cell
+                    runCell(interactiveCell);
+                }, 150);
+            });
+
+            // Initialize the Python variable
+            initPyodide().then(() => {
+                pyodide.globals.set('eccentricity', parseFloat(slider.value));
+            });
+        }
+
+        /**
+         * Initialize everything when DOM is ready
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            setupCells();
+            setupSlider();
+            
+            // Start loading Pyodide immediately in background
+            initPyodide().catch(err => {
+                console.error('Background Pyodide init failed:', err);
+            });
+        });
+    </script>
+
+</body>
+</html>

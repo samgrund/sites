@@ -346,6 +346,53 @@
             color: #7f8c8d;
         }
 
+        .edit-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            font-size: 0.8em;
+            font-family: inherit;
+            background: #f5f5f5;
+            color: #555;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: auto;
+        }
+
+        .edit-btn:hover {
+            background: #e8e8e8;
+            color: #333;
+            border-color: #999;
+        }
+
+        .edit-btn.editing {
+            background: #e8f5e9;
+            color: #1b5e20;
+            border-color: #66bb6a;
+        }
+
+        .edit-btn .label-edit { display: inline; }
+        .edit-btn .label-done { display: none; }
+        .edit-btn.editing .label-edit { display: none; }
+        .edit-btn.editing .label-done { display: inline; }
+
+        /* Visual feedback for editable code */
+        .cell.edit-mode pre {
+            background: #fffef5;
+            border-left: 3px solid #f39c12;
+        }
+
+        .cell.edit-mode code {
+            cursor: text;
+        }
+
+        .cell:not(.edit-mode) pre {
+            border-left: 3px solid transparent;
+        }
+
         /* === Output Area === */
         .output {
             background: var(--output-bg);
@@ -676,7 +723,7 @@
                 </p>
 
                 <div class="cell" data-cell-id="intro-1">
-                    <pre class="language-python"><code class="language-python" contenteditable="true" spellcheck="false"># Welcome to Interactive Astrophysics!
+                    <pre class="language-python"><code class="language-python" spellcheck="false"># Welcome to Interactive Astrophysics!
 import numpy as np
 
 # A simple astronomical calculation
@@ -742,7 +789,7 @@ print(f"\nThat's about {time_to_moon:.1f} seconds — try timing it next time!")
                 </p>
 
                 <div class="cell" data-cell-id="ch1-1">
-                    <pre class="language-python"><code class="language-python" contenteditable="true" spellcheck="false"># Physical constants
+                    <pre class="language-python"><code class="language-python" spellcheck="false"># Physical constants
 G = 6.67430e-11  # Gravitational constant (m³/kg/s²)
 M_earth = 5.972e24  # Earth's mass (kg)
 R_earth = 6.371e6  # Earth's radius (m)
@@ -782,7 +829,7 @@ print(f"g = {g:.4f} m/s²")</code></pre>
                 </p>
 
                 <div class="cell" data-cell-id="ch1-2">
-                    <pre class="language-python"><code class="language-python" contenteditable="true" spellcheck="false">import numpy as np
+                    <pre class="language-python"><code class="language-python" spellcheck="false">import numpy as np
 
 # Define orbital altitude (ISS orbits at ~400 km)
 altitude = 400e3  # meters above surface
@@ -833,7 +880,7 @@ print(f"\nThe ISS completes ~{24*60/T_minutes:.1f} orbits per day!")</code></pre
                 </div>
 
                 <div class="cell" data-cell-id="ch1-3">
-                    <pre class="language-python"><code class="language-python" contenteditable="true" spellcheck="false">import matplotlib.pyplot as plt
+                    <pre class="language-python"><code class="language-python" spellcheck="false">import matplotlib.pyplot as plt
 
 # Orbital parameters
 a = 1.5e8  # Semi-major axis (km)
@@ -882,7 +929,7 @@ plt.show()</code></pre>
                 </div>
 
                 <div class="cell" data-cell-id="ch1-4" data-interactive="eccentricity">
-                    <pre class="language-python"><code class="language-python" contenteditable="true" spellcheck="false"># This cell updates when you move the slider!
+                    <pre class="language-python"><code class="language-python" spellcheck="false"># This cell updates when you move the slider!
 e_interactive = eccentricity  # Value from slider
 
 theta = np.linspace(0, 2*np.pi, 500)
@@ -966,7 +1013,7 @@ print(f"Ratio: {apoapsis/periapsis:.2f}x")</code></pre>
                 </p>
 
                 <div class="cell" data-cell-id="ch2-1">
-                    <pre class="language-python"><code class="language-python" contenteditable="true" spellcheck="false">import numpy as np
+                    <pre class="language-python"><code class="language-python" spellcheck="false">import numpy as np
 
 # Gravitational constant
 G = 6.67430e-11  # m³/kg/s²
@@ -1014,7 +1061,7 @@ for name, mass, radius in bodies:
                 </p>
 
                 <div class="cell" data-cell-id="ch2-2">
-                    <pre class="language-python"><code class="language-python" contenteditable="true" spellcheck="false">import matplotlib.pyplot as plt
+                    <pre class="language-python"><code class="language-python" spellcheck="false">import matplotlib.pyplot as plt
 
 names = [b[0] for b in bodies]
 v_escs = [escape_velocities[name]/1000 for name in names]
@@ -1056,7 +1103,7 @@ print("Notice how the Sun's escape velocity is ~55x greater than Earth's!")</cod
                 </p>
 
                 <div class="cell" data-cell-id="ch2-3">
-                    <pre class="language-python"><code class="language-python" contenteditable="true" spellcheck="false"># Escape velocity as a function of altitude
+                    <pre class="language-python"><code class="language-python" spellcheck="false"># Escape velocity as a function of altitude
 R_earth = 6.371e6
 M_earth = 5.972e24
 
@@ -1136,7 +1183,7 @@ plt.show()</code></pre>
                 </p>
 
                 <div class="cell" data-cell-id="ch3-1">
-                    <pre class="language-python"><code class="language-python" contenteditable="true" spellcheck="false">import numpy as np
+                    <pre class="language-python"><code class="language-python" spellcheck="false">import numpy as np
 
 # Constants
 k_B = 1.380649e-23  # Boltzmann constant (J/K)
@@ -1185,7 +1232,7 @@ print("Gases with v_rms << v_esc are retained.")</code></pre>
                 </p>
 
                 <div class="cell" data-cell-id="ch3-2">
-                    <pre class="language-python"><code class="language-python" contenteditable="true" spellcheck="false">import matplotlib.pyplot as plt
+                    <pre class="language-python"><code class="language-python" spellcheck="false">import matplotlib.pyplot as plt
 import numpy as np
 
 # Planet data: (name, escape_vel m/s, surface_temp K)
@@ -1277,7 +1324,7 @@ print("Planets can retain gases whose thermal velocity curves fall BELOW their m
                 </p>
 
                 <div class="cell" data-cell-id="ch4-1">
-                    <pre class="language-python"><code class="language-python" contenteditable="true" spellcheck="false">import numpy as np
+                    <pre class="language-python"><code class="language-python" spellcheck="false">import numpy as np
 
 # Constants
 sigma = 5.670374e-8  # Stefan-Boltzmann constant (W/m²/K⁴)
@@ -1313,7 +1360,7 @@ print(f"Agreement: {L_calc/L_sun * 100:.1f}%")</code></pre>
                 </p>
 
                 <div class="cell" data-cell-id="ch4-2">
-                    <pre class="language-python"><code class="language-python" contenteditable="true" spellcheck="false">import matplotlib.pyplot as plt
+                    <pre class="language-python"><code class="language-python" spellcheck="false">import matplotlib.pyplot as plt
 
 # Star data: (name, radius/R_sun, temperature K, color)
 stars = [
@@ -1362,7 +1409,7 @@ print("\nNote: Betelgeuse is ~100,000x more luminous than the Sun!")</code></pre
                 </div>
 
                 <div class="cell" data-cell-id="ch4-3" data-interactive="temperature">
-                    <pre class="language-python"><code class="language-python" contenteditable="true" spellcheck="false"># Interactive stellar luminosity
+                    <pre class="language-python"><code class="language-python" spellcheck="false"># Interactive stellar luminosity
 T_star = temperature  # Value from slider
 
 # Calculate luminosity for a Sun-sized star
@@ -1459,7 +1506,7 @@ print(f"Classification: {star_type}")</code></pre>
                 <h2>5.2 Building an H-R Diagram</h2>
 
                 <div class="cell" data-cell-id="ch5-1">
-                    <pre class="language-python"><code class="language-python" contenteditable="true" spellcheck="false">import numpy as np
+                    <pre class="language-python"><code class="language-python" spellcheck="false">import numpy as np
 import matplotlib.pyplot as plt
 
 # Generate synthetic stellar data
@@ -1545,7 +1592,7 @@ print("White dwarfs: Stellar remnants (dead star cores)")</code></pre>
                 </p>
 
                 <div class="cell" data-cell-id="ch5-2">
-                    <pre class="language-python"><code class="language-python" contenteditable="true" spellcheck="false">import matplotlib.pyplot as plt
+                    <pre class="language-python"><code class="language-python" spellcheck="false">import matplotlib.pyplot as plt
 import numpy as np
 
 # Evolutionary track for a 1 solar mass star (simplified)
@@ -1635,7 +1682,7 @@ print("• White dwarf: Cools forever (trillions of years)")</code></pre>
                 <h2>Fundamental Constants</h2>
 
                 <div class="cell" data-cell-id="app-1">
-                    <pre class="language-python"><code class="language-python" contenteditable="true" spellcheck="false">import numpy as np
+                    <pre class="language-python"><code class="language-python" spellcheck="false">import numpy as np
 
 # Fundamental physical constants
 constants = {
@@ -1663,7 +1710,7 @@ for name, (value, unit) in constants.items():
                 <h2>Solar System Data</h2>
 
                 <div class="cell" data-cell-id="app-2">
-                    <pre class="language-python"><code class="language-python" contenteditable="true" spellcheck="false"># Solar and planetary data
+                    <pre class="language-python"><code class="language-python" spellcheck="false"># Solar and planetary data
 solar_data = {
     "Solar mass M☉": (1.989e30, "kg"),
     "Solar radius R☉": (6.957e8, "m"),
@@ -1693,7 +1740,7 @@ print("All values from IAU 2015 nominal values and CODATA 2018")</code></pre>
                 <h2>Quick Reference Formulas</h2>
 
                 <div class="cell" data-cell-id="app-3">
-                    <pre class="language-python"><code class="language-python" contenteditable="true" spellcheck="false"># Useful astrophysical formulas as functions
+                    <pre class="language-python"><code class="language-python" spellcheck="false"># Useful astrophysical formulas as functions
 import numpy as np
 
 G = 6.67430e-11
@@ -2017,6 +2064,27 @@ print("Python environment ready!")
         function setupCells() {
             document.querySelectorAll('.cell').forEach(cell => {
                 const runBtn = cell.querySelector('.run-btn');
+                const controls = cell.querySelector('.cell-controls');
+                const codeElement = cell.querySelector('code.language-python');
+                
+                // Add edit button with clear labels
+                const editBtn = document.createElement('button');
+                editBtn.className = 'edit-btn';
+                editBtn.title = 'Edit this code';
+                editBtn.innerHTML = '<span class="label-edit">✎ Edit code</span><span class="label-done">✓ Done editing</span>';
+                controls.appendChild(editBtn);
+                
+                // Handle edit toggle
+                editBtn.addEventListener('click', () => {
+                    const isEditing = editBtn.classList.toggle('editing');
+                    cell.classList.toggle('edit-mode', isEditing);
+                    codeElement.contentEditable = isEditing ? 'true' : 'false';
+                    if (isEditing) {
+                        codeElement.focus();
+                    }
+                });
+                
+                // Handle run button
                 runBtn.addEventListener('click', () => runCell(cell));
             });
         }

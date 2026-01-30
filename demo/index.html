@@ -299,7 +299,7 @@
 
         .cell .CodeMirror-linenumber {
             color: #999;
-            padding: 0 8px 0 5px;
+            padding: 0 12px 0 8px;
             min-width: 30px;
         }
 
@@ -308,7 +308,7 @@
         }
 
         .cell .CodeMirror-line {
-            padding: 0 10px;
+            padding: 0 10px 0 8px;
         }
 
         /* Read-only state */
@@ -1901,6 +1901,15 @@ print(f"Sun's surface escape velocity: {escape_velocity(M_sun, R_sun)/1000:.1f} 
     <script>
         /**
          * ==========================================
+         * CODEMIRROR EDITOR INSTANCES
+         * ==========================================
+         */
+        
+        // Store CodeMirror instances by cell ID (global so navigation can access it)
+        const cellEditors = new Map();
+        
+        /**
+         * ==========================================
          * NAVIGATION SYSTEM
          * ==========================================
          */
@@ -1930,6 +1939,24 @@ print(f"Sun's surface escape velocity: {escape_velocity(M_sun, R_sun)/1000:.1f} 
 
             // Update URL hash
             history.pushState(null, '', `#${chapterId}`);
+            
+            // Refresh CodeMirror editors in the visible chapter
+            // (CodeMirror needs a refresh when becoming visible)
+            setTimeout(() => {
+                refreshEditorsInChapter(targetChapter);
+            }, 10);
+        }
+        
+        // Refresh all CodeMirror editors in a chapter
+        function refreshEditorsInChapter(chapter) {
+            if (!chapter) return;
+            chapter.querySelectorAll('.cell').forEach(cell => {
+                const cellId = cell.dataset.cellId;
+                if (cellEditors && cellEditors.has(cellId)) {
+                    const editor = cellEditors.get(cellId);
+                    editor.refresh();
+                }
+            });
         }
 
         // Toggle mobile sidebar
@@ -2303,9 +2330,6 @@ print("Python environment ready!")
          * ==========================================
          */
 
-        // Store CodeMirror instances by cell ID
-        const cellEditors = new Map();
-
         function setupCells() {
             document.querySelectorAll('.cell').forEach(cell => {
                 const runBtn = cell.querySelector('.run-btn');
@@ -2467,9 +2491,18 @@ print("Python environment ready!")
          */
 
         document.addEventListener('DOMContentLoaded', () => {
-            setupNavigation();
+            // Setup cells first (creates CodeMirror editors)
             setupCells();
             setupWidgets();
+            
+            // Setup navigation after cells are created
+            setupNavigation();
+            
+            // Refresh editors in the initially visible chapter
+            const activeChapter = document.querySelector('.chapter.active');
+            if (activeChapter) {
+                setTimeout(() => refreshEditorsInChapter(activeChapter), 50);
+            }
             
             // Start loading Pyodide in background
             initPyodide().catch(err => {

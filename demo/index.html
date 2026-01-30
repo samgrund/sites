@@ -6,9 +6,12 @@
     <title>Interactive Astrophysics — A Computational Approach</title>
     
     <!-- ============================================
-         PRISM.JS — Syntax Highlighting (CDN)
+         CODEMIRROR — Code Editor (CDN)
          ============================================ -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/default.css">
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js"></script>
     
     <!-- ============================================
          EMBEDDED CSS — Book Layout & Typography
@@ -270,41 +273,65 @@
             background: var(--code-bg);
         }
 
-        .cell pre {
-            margin: 0;
-            padding: 1em;
-            overflow-x: auto;
+        .cell .code-wrapper {
+            position: relative;
         }
 
-        .cell code {
+        /* CodeMirror styling */
+        .cell .CodeMirror {
             font-family: "Fira Code", "Source Code Pro", Consolas, Monaco, monospace;
             font-size: 0.9em;
-            line-height: 1.5;
-            display: block;
-            white-space: pre;
-            background: transparent !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            outline: none;
-        }
-
-        .cell code:focus {
-            background: #fff9e6 !important;
-        }
-
-        .cell code[contenteditable="true"] {
-            cursor: text;
-        }
-
-        .cell pre[class*="language-"] {
-            margin: 0;
-            padding: 1em;
+            line-height: 1.6;
+            height: auto;
             background: var(--code-bg);
-            border-radius: 0;
+            border: none;
         }
 
-        .cell code[class*="language-"] {
-            text-shadow: none;
+        .cell .CodeMirror-scroll {
+            min-height: 60px;
+            max-height: 500px;
+        }
+
+        .cell .CodeMirror-gutters {
+            background: #e8eaed;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .cell .CodeMirror-linenumber {
+            color: #999;
+            padding: 0 8px 0 5px;
+            min-width: 30px;
+        }
+
+        .cell .CodeMirror-lines {
+            padding: 10px 0;
+        }
+
+        .cell .CodeMirror-line {
+            padding: 0 10px;
+        }
+
+        /* Read-only state */
+        .cell:not(.edit-mode) .CodeMirror {
+            background: var(--code-bg);
+        }
+
+        .cell:not(.edit-mode) .CodeMirror-cursor {
+            display: none !important;
+        }
+
+        /* Edit mode state */
+        .cell.edit-mode .CodeMirror {
+            background: #fffef5;
+        }
+
+        .cell.edit-mode .CodeMirror-gutters {
+            background: #f5f3e8;
+        }
+
+        /* Original code element - hidden when CodeMirror is active */
+        .cell pre.original-code {
+            display: none;
         }
 
         /* === Run Button === */
@@ -405,20 +432,6 @@
         .edit-btn .label-done { display: none; }
         .edit-btn.editing .label-edit { display: none; }
         .edit-btn.editing .label-done { display: inline; }
-
-        /* Visual feedback for editable code */
-        .cell.edit-mode pre {
-            background: #fffef5;
-            border-left: 3px solid #f39c12;
-        }
-
-        .cell.edit-mode code {
-            cursor: text;
-        }
-
-        .cell:not(.edit-mode) pre {
-            border-left: 3px solid transparent;
-        }
 
         /* Running state visual feedback */
         .cell.running {
@@ -2178,12 +2191,12 @@ print("Python environment ready!")
         }
 
         async function runCell(cell) {
-            const codeElement = cell.querySelector('code.language-python');
             const outputDiv = cell.querySelector('.output');
             const runBtn = cell.querySelector('.run-btn');
             const statusSpan = cell.querySelector('.cell-status');
             
-            const code = codeElement.textContent;
+            // Get code from CodeMirror editor
+            const code = getCellCode(cell);
 
             // Disable run button and show running state
             runBtn.disabled = true;
@@ -2286,95 +2299,63 @@ print("Python environment ready!")
 
         /**
          * ==========================================
-         * LIVE SYNTAX HIGHLIGHTING
+         * CODEMIRROR EDITOR SETUP
          * ==========================================
          */
 
-        // Save cursor position in contenteditable element
-        function saveCursorPosition(element) {
-            const selection = window.getSelection();
-            if (!selection.rangeCount) return null;
-            
-            const range = selection.getRangeAt(0);
-            const preCaretRange = range.cloneRange();
-            preCaretRange.selectNodeContents(element);
-            preCaretRange.setEnd(range.startContainer, range.startOffset);
-            
-            return preCaretRange.toString().length;
-        }
-
-        // Restore cursor position in contenteditable element
-        function restoreCursorPosition(element, position) {
-            if (position === null) return;
-            
-            const selection = window.getSelection();
-            const range = document.createRange();
-            
-            let currentPos = 0;
-            let found = false;
-            
-            function traverseNodes(node) {
-                if (found) return;
-                
-                if (node.nodeType === Node.TEXT_NODE) {
-                    const nodeLength = node.textContent.length;
-                    if (currentPos + nodeLength >= position) {
-                        range.setStart(node, position - currentPos);
-                        range.collapse(true);
-                        found = true;
-                        return;
-                    }
-                    currentPos += nodeLength;
-                } else {
-                    for (const child of node.childNodes) {
-                        traverseNodes(child);
-                        if (found) return;
-                    }
-                }
-            }
-            
-            traverseNodes(element);
-            
-            if (found) {
-                selection.removeAllRanges();
-                selection.addRange(range);
-            } else {
-                // Position at end if not found
-                range.selectNodeContents(element);
-                range.collapse(false);
-                selection.removeAllRanges();
-                selection.addRange(range);
-            }
-        }
-
-        // Debounced syntax highlighting
-        function createHighlighter(codeElement) {
-            let debounceTimer = null;
-            
-            return function highlightWithDebounce() {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
-                    const cursorPos = saveCursorPosition(codeElement);
-                    const code = codeElement.textContent;
-                    
-                    // Re-highlight
-                    codeElement.textContent = code;
-                    Prism.highlightElement(codeElement);
-                    
-                    // Restore cursor
-                    restoreCursorPosition(codeElement, cursorPos);
-                }, 150);
-            };
-        }
+        // Store CodeMirror instances by cell ID
+        const cellEditors = new Map();
 
         function setupCells() {
             document.querySelectorAll('.cell').forEach(cell => {
                 const runBtn = cell.querySelector('.run-btn');
                 const controls = cell.querySelector('.cell-controls');
+                const preElement = cell.querySelector('pre.language-python');
                 const codeElement = cell.querySelector('code.language-python');
+                const cellId = cell.dataset.cellId;
                 
-                // Create highlighter for this cell
-                const highlightCode = createHighlighter(codeElement);
+                // Get the original code content
+                const originalCode = codeElement.textContent;
+                
+                // Hide the original pre/code elements
+                preElement.classList.add('original-code');
+                
+                // Create a wrapper div for CodeMirror
+                const codeWrapper = document.createElement('div');
+                codeWrapper.className = 'code-wrapper';
+                preElement.parentNode.insertBefore(codeWrapper, preElement);
+                
+                // Create a textarea for CodeMirror
+                const textarea = document.createElement('textarea');
+                textarea.value = originalCode;
+                codeWrapper.appendChild(textarea);
+                
+                // Initialize CodeMirror
+                const editor = CodeMirror.fromTextArea(textarea, {
+                    mode: 'python',
+                    lineNumbers: true,
+                    indentUnit: 4,
+                    tabSize: 4,
+                    indentWithTabs: false,
+                    lineWrapping: false,
+                    readOnly: true,  // Start in read-only mode
+                    viewportMargin: Infinity,
+                    extraKeys: {
+                        'Tab': (cm) => {
+                            if (cm.somethingSelected()) {
+                                cm.indentSelection('add');
+                            } else {
+                                cm.replaceSelection('    ', 'end');
+                            }
+                        },
+                        'Shift-Tab': (cm) => {
+                            cm.indentSelection('subtract');
+                        }
+                    }
+                });
+                
+                // Store the editor instance
+                cellEditors.set(cellId, editor);
                 
                 // Add stop button (hidden by default, shown when running)
                 const stopBtn = document.createElement('button');
@@ -2394,17 +2375,12 @@ print("Python environment ready!")
                 editBtn.addEventListener('click', () => {
                     const isEditing = editBtn.classList.toggle('editing');
                     cell.classList.toggle('edit-mode', isEditing);
-                    codeElement.contentEditable = isEditing ? 'true' : 'false';
+                    editor.setOption('readOnly', !isEditing);
                     if (isEditing) {
-                        codeElement.focus();
-                    } else {
-                        // Re-highlight when done editing
-                        Prism.highlightElement(codeElement);
+                        editor.focus();
                     }
+                    editor.refresh();
                 });
-                
-                // Live syntax highlighting while typing
-                codeElement.addEventListener('input', highlightCode);
                 
                 // Handle run button
                 runBtn.addEventListener('click', () => runCell(cell));
@@ -2412,6 +2388,18 @@ print("Python environment ready!")
                 // Handle stop button
                 stopBtn.addEventListener('click', () => stopCell(cell));
             });
+        }
+        
+        // Helper function to get code from a cell (used by runCell)
+        function getCellCode(cell) {
+            const cellId = cell.dataset.cellId;
+            const editor = cellEditors.get(cellId);
+            if (editor) {
+                return editor.getValue();
+            }
+            // Fallback to original code element
+            const codeElement = cell.querySelector('code.language-python');
+            return codeElement ? codeElement.textContent : '';
         }
 
         /**

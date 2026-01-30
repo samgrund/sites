@@ -1117,7 +1117,6 @@ print(f"\nThe ISS completes ~{24*60/T_minutes:.1f} orbits per day!")</code></pre
 
                 <div class="cell" data-cell-id="ch1-3">
                     <pre class="language-python"><code class="language-python" spellcheck="false">import matplotlib.pyplot as plt
-
 # Orbital parameters
 a = 1.5e8  # Semi-major axis (km)
 e = 0.5    # Eccentricity
@@ -1131,7 +1130,7 @@ x = r * np.cos(theta)
 y = r * np.sin(theta)
 
 # Create the plot
-fig, ax = plt.subplots(figsize=(8, 8))
+fig, ax = plt.subplots()
 ax.plot(x, y, 'b-', linewidth=2, label=f'Orbit (e={e})')
 ax.plot(0, 0, 'yo', markersize=20, label='Central body (Star)')
 ax.set_xlabel('x (km)', fontsize=12)
@@ -1139,7 +1138,7 @@ ax.set_ylabel('y (km)', fontsize=12)
 ax.set_title('Elliptical Orbit', fontsize=14, fontweight='bold')
 ax.set_aspect('equal')
 ax.grid(True, alpha=0.3)
-ax.legend(loc='upper right')
+ax.legend()
 plt.tight_layout()
 plt.show()</code></pre>
                     <div class="cell-controls">
@@ -1159,7 +1158,10 @@ plt.show()</code></pre>
                 
 
                 <div class="cell" data-cell-id="ch1-4" data-interactive="eccentricity">
-                    <pre class="language-python"><code class="language-python" spellcheck="false"># This cell updates when you move the slider!
+                    <pre class="language-python"><code class="language-python" spellcheck="false">import numpy as np
+import matplotlib.pyplot as plt
+                        
+# This cell updates when you move the slider!
 e_interactive = eccentricity  # Value from slider
 
 theta = np.linspace(0, 2*np.pi, 500)
@@ -1175,7 +1177,7 @@ y = r * np.sin(theta)
 periapsis = a_interactive * (1 - e_interactive)
 apoapsis = a_interactive * (1 + e_interactive)
 
-fig, ax = plt.subplots(figsize=(8, 6))
+fig, ax = plt.subplots()
 ax.plot(x, y, 'b-', linewidth=2.5)
 ax.plot(0, 0, 'yo', markersize=15, label='Central Body', zorder=5)
 ax.plot(periapsis, 0, 'go', markersize=10, label=f'Periapsis: {periapsis:.1f}')
@@ -1188,7 +1190,7 @@ ax.set_ylabel('y (normalized units)', fontsize=11)
 ax.set_title(f'Orbital Shape — Eccentricity e = {e_interactive:.2f}', fontsize=13, fontweight='bold')
 ax.set_aspect('equal')
 ax.grid(True, alpha=0.3)
-ax.legend(loc='upper left', fontsize=9)
+ax.legend()
 plt.tight_layout()
 plt.show()
 
@@ -1251,7 +1253,8 @@ print(f"Ratio: {apoapsis/periapsis:.2f}x")</code></pre>
                 </p>
 
                 <div class="cell" data-cell-id="ch2-1">
-                    <pre class="language-python"><code class="language-python" spellcheck="false">import numpy as np
+                    <pre class="language-python"><code class="language-python" spellcheck="false">import matplotlib.pyplot as plt
+import numpy as np
 
 # Gravitational constant
 G = 6.67430e-11  # m³/kg/s²
@@ -1304,7 +1307,7 @@ for name, mass, radius in bodies:
 names = [b[0] for b in bodies]
 v_escs = [escape_velocities[name]/1000 for name in names]
 
-fig, ax = plt.subplots(figsize=(10, 6))
+fig, ax = plt.subplots()
 
 colors = ['#3498db', '#95a5a6', '#e74c3c', '#f39c12', '#f1c40f']
 bars = ax.bar(names, v_escs, color=colors, edgecolor='black', linewidth=1.5)
@@ -1341,7 +1344,10 @@ print("Notice how the Sun's escape velocity is ~55x greater than Earth's!")</cod
                 </p>
 
                 <div class="cell" data-cell-id="ch2-3">
-                    <pre class="language-python"><code class="language-python" spellcheck="false"># Escape velocity as a function of altitude
+                    <pre class="language-python"><code class="language-python" spellcheck="false">import matplotlib.pyplot as plt
+import numpy as np
+
+# Escape velocity as a function of altitude
 R_earth = 6.371e6
 M_earth = 5.972e24
 
@@ -1358,7 +1364,7 @@ key_alts = {
     'Geostationary (35,786 km)': 35786e3,
 }
 
-fig, ax = plt.subplots(figsize=(10, 6))
+fig, ax = plt.subplots()
 ax.plot(altitudes/1e6, v_escape, 'b-', linewidth=2.5)
 
 # Mark key altitudes
@@ -1484,7 +1490,7 @@ planets = {
     'Jupiter': (59500, 165),
 }
 
-fig, ax = plt.subplots(figsize=(12, 8))
+fig, ax = plt.subplots()
 
 # Plot each gas as a line (v_thermal vs T)
 T_range = np.linspace(50, 800, 100)
@@ -1505,7 +1511,7 @@ ax.set_xlabel('Temperature (K)', fontsize=12)
 ax.set_ylabel('Velocity (m/s)', fontsize=12)
 ax.set_title('Atmospheric Retention: Gases vs. Planets\n(Planets retain gases below their marker)', 
              fontsize=13, fontweight='bold')
-ax.legend(loc='upper left', fontsize=9)
+ax.legend()
 ax.set_xlim(50, 800)
 ax.set_ylim(0, 12000)
 ax.grid(True, alpha=0.3)
@@ -1598,9 +1604,7 @@ print(f"Agreement: {L_calc/L_sun * 100:.1f}%")</code></pre>
                 </p>
 
                 <div class="cell" data-cell-id="ch4-2">
-                    <pre class="language-python"><code class="language-python" spellcheck="false">import matplotlib.pyplot as plt
-
-# Star data: (name, radius/R_sun, temperature K, color)
+                    <pre class="language-python"><code class="language-python" spellcheck="false"># Star data: (name, radius/R_sun, temperature K, color)
 stars = [
     ("Sun", 1.0, 5778, '#FFF44F'),
     ("Sirius A", 1.71, 9940, '#CAE1FF'),
@@ -1673,7 +1677,7 @@ else:
     color, star_type = '#CAE1FF', 'Blue-white'
 
 # Create visualization
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+fig, (ax1, ax2) = plt.subplots(1, 2)
 
 # Left: Star visualization
 ax1.set_xlim(-2, 2)
@@ -1744,10 +1748,7 @@ print(f"Classification: {star_type}")</code></pre>
                 <h2>5.2 Building an H-R Diagram</h2>
 
                 <div class="cell" data-cell-id="ch5-1">
-                    <pre class="language-python"><code class="language-python" spellcheck="false">import numpy as np
-import matplotlib.pyplot as plt
-
-# Generate synthetic stellar data
+                    <pre class="language-python"><code class="language-python" spellcheck="false"># Generate synthetic stellar data
 np.random.seed(42)
 
 # Main sequence stars (most common)
@@ -1772,7 +1773,7 @@ T_wd = 10**(np.random.uniform(3.9, 4.5, n_wd))  # Hot but dim
 L_wd = 10**(np.random.uniform(-3, -1, n_wd))
 
 # Create the H-R diagram
-fig, ax = plt.subplots(figsize=(10, 8))
+fig, ax = plt.subplots()
 
 ax.scatter(T_ms, L_ms, c='#3498db', s=20, alpha=0.6, label='Main Sequence')
 ax.scatter(T_rg, L_rg, c='#e74c3c', s=50, alpha=0.7, label='Red Giants')
@@ -1795,7 +1796,7 @@ ax.invert_xaxis()
 ax.set_xlim(35000, 2500)
 ax.set_ylim(1e-4, 1e6)
 
-ax.legend(loc='upper right', fontsize=10)
+ax.legend()
 ax.grid(True, alpha=0.3, which='both')
 
 # Add spectral class labels
@@ -1830,7 +1831,7 @@ print("White dwarfs: Stellar remnants (dead star cores)")</code></pre>
                 </p>
 
                 <div class="cell" data-cell-id="ch5-2">
-                    <pre class="language-python"><code class="language-python" spellcheck="false">import matplotlib.pyplot as plt
+                    <pre class="language-python"><code class="language-python" spellcheck="false">
 import numpy as np
 
 # Evolutionary track for a 1 solar mass star (simplified)
@@ -1852,7 +1853,7 @@ T = [e[0] for e in evolution]
 L = [e[1] for e in evolution]
 stages = [e[2] for e in evolution]
 
-fig, ax = plt.subplots(figsize=(11, 8))
+fig, ax = plt.subplots()
 
 # Plot evolutionary track
 ax.plot(T, L, 'k-', linewidth=2, alpha=0.5)
@@ -2573,14 +2574,69 @@ print(f"Sun's surface escape velocity: {escape_velocity(M_sun, R_sun)/1000:.1f} 
                 self.postMessage({ type: 'status', message: 'Configuring environment...' });
                 
                 await pyodide.runPythonAsync(\`
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import io
 import base64
 import sys
 import time
+
+# === SciencePlots Science Base Style ===
+import matplotlib as mpl
+mpl.use('Agg')
+from cycler import cycler
+mpl.rcParams.update({
+    'axes.prop_cycle': cycler('color', ['#0C5DA5', '#00B945', '#FF9500', '#FF2C00', '#845B97', '#474747', '#9e9e9e']),
+    'figure.figsize': (3.5, 2.625),
+    'xtick.direction': 'in',
+    'xtick.major.size': 3,
+    'xtick.major.width': 0.5,
+    'xtick.minor.size': 1.5,
+    'xtick.minor.width': 0.5,
+    'xtick.minor.visible': True,
+    'xtick.top': True,
+    'ytick.direction': 'in',
+    'ytick.major.size': 3,
+    'ytick.major.width': 0.5,
+    'ytick.minor.size': 1.5,
+    'ytick.minor.width': 0.5,
+    'ytick.minor.visible': True,
+    'ytick.right': True,
+    'axes.linewidth': 0.5,
+    'grid.linewidth': 0.5,
+    'lines.linewidth': 1.0,
+    'legend.frameon': True,
+    'savefig.bbox': 'tight',
+    'savefig.pad_inches': 0.05,
+    'font.family': 'serif',
+    'mathtext.fontset': 'dejavuserif',
+})
+
+# === Notebook Overwrite Style ===
+mpl.rcParams.update({
+    'figure.figsize': (8, 6),
+    'xtick.major.size': 6,
+    'xtick.major.width': 1,
+    'xtick.minor.size': 3,
+    'xtick.minor.width': 1,
+    'ytick.major.size': 6,
+    'ytick.major.width': 1,
+    'ytick.minor.size': 3,
+    'ytick.minor.width': 1,
+    'xtick.labelsize': 16,
+    'ytick.labelsize': 16,
+    'legend.fontsize': 12,
+    'legend.title_fontsize': 16,
+    'axes.titlesize': 16,
+    'axes.labelsize': 16,
+    'axes.linewidth': 1,
+    'grid.linewidth': 1,
+    'lines.linewidth': 2.0,
+    'font.family': 'sans-serif',
+    'mathtext.fontset': 'dejavusans',
+    'text.usetex': False,
+    'figure.dpi': 200,
+})
 
 _figure_data = []
 _original_sleep = time.sleep
@@ -2603,7 +2659,7 @@ def _custom_show(*args, **kwargs):
     global _figure_data
     fig = plt.gcf()
     buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=100, bbox_inches='tight', 
+    fig.savefig(buf, format='png', dpi=200, bbox_inches='tight', 
                 facecolor='white', edgecolor='none')
     buf.seek(0)
     img_data = base64.b64encode(buf.read()).decode('utf-8')

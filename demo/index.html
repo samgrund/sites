@@ -733,6 +733,13 @@
             </div>
 
             <div class="nav-section">
+                <div class="nav-section-title">Part III: Tools</div>
+                <a class="nav-item" data-chapter="ch6">
+                    <span class="chapter-num">6</span> Astropy Units
+                </a>
+            </div>
+
+            <div class="nav-section">
                 <div class="nav-section-title">Appendix</div>
                 <a class="nav-item" data-chapter="appendix">
                     <span class="chapter-num">📋</span> Physical Constants
@@ -1743,6 +1750,377 @@ print("• White dwarf: Cools forever (trillions of years)")</code></pre>
 
                 <div class="chapter-nav">
                     <button class="chapter-nav-btn prev" data-target="ch4">← Chapter 4: Stellar Luminosity</button>
+                    <button class="chapter-nav-btn next" data-target="ch6">Chapter 6: Astropy Units →</button>
+                </div>
+            </article>
+
+            <!-- ==========================================
+                 CHAPTER 6: ASTROPY UNITS
+                 ========================================== -->
+            <article class="chapter" id="chapter-ch6">
+                <h1 class="chapter-title">Chapter 6: Working with Astropy Units</h1>
+                <p class="chapter-subtitle">Dimensional Analysis Made Easy</p>
+
+                <h2>6.1 Introduction to Astropy Units</h2>
+
+                <p>
+                    One of the most common sources of errors in scientific calculations is unit mismatches.
+                    The <a href="https://www.astropy.org/" target="_blank">Astropy</a> library provides a powerful
+                    <strong>units and quantities</strong> system that tracks physical units automatically,
+                    performs unit conversions, and catches dimensional errors before they cause problems.
+                </p>
+
+                <p>
+                    Let's start by importing the units module and exploring how to create quantities:
+                </p>
+
+                <div class="cell" data-cell-id="ch6-1">
+                    <pre class="language-python"><code class="language-python" spellcheck="false">from astropy import units as u
+from astropy import constants as const
+
+# Creating quantities with units
+distance = 384400 * u.km          # Distance to the Moon
+speed = 299792458 * u.m / u.s     # Speed of light
+mass = 5.972e24 * u.kg            # Earth's mass
+
+print("🌙 Basic Quantities with Units")
+print("=" * 45)
+print(f"Distance to Moon: {distance}")
+print(f"Speed of light:   {speed}")
+print(f"Earth's mass:     {mass:.3e}")
+
+# Unit conversions are automatic!
+print(f"\n📐 Unit Conversions")
+print("=" * 45)
+print(f"Moon distance in au: {distance.to(u.au):.5f}")
+print(f"Speed of light in km/h: {speed.to(u.km/u.hour):.2e}")
+print(f"Earth's mass in solar masses: {mass.to(u.M_sun):.2e}")</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <div class="note">
+                    <div class="note-title">💡 Why Use Units?</div>
+                    <p>
+                        The Mars Climate Orbiter was lost in 1999 because one team used imperial units
+                        while another used metric. Astropy's unit system prevents such errors by making
+                        units explicit and conversions automatic.
+                    </p>
+                </div>
+
+                <h2>6.2 Built-in Astronomical Constants</h2>
+
+                <p>
+                    Astropy includes a comprehensive library of physical and astronomical constants,
+                    all with proper units and uncertainties from authoritative sources (CODATA, IAU):
+                </p>
+
+                <div class="cell" data-cell-id="ch6-2">
+                    <pre class="language-python"><code class="language-python" spellcheck="false">from astropy import constants as const
+
+# Display some key constants with full information
+print("⭐ Astronomical Constants")
+print("=" * 60)
+
+constants_list = [
+    ("Speed of light", const.c),
+    ("Gravitational constant", const.G),
+    ("Solar mass", const.M_sun),
+    ("Solar radius", const.R_sun),
+    ("Solar luminosity", const.L_sun),
+    ("Earth mass", const.M_earth),
+    ("Earth radius", const.R_earth),
+    ("Boltzmann constant", const.k_B),
+    ("Stefan-Boltzmann constant", const.sigma_sb),
+]
+
+for name, c in constants_list:
+    print(f"\n{name}:")
+    print(f"  Value: {c}")
+    if c.uncertainty:
+        print(f"  Uncertainty: ±{c.uncertainty}")</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <h2>6.3 Calculations with Automatic Unit Handling</h2>
+
+                <p>
+                    The real power of Astropy units becomes apparent when performing calculations.
+                    Units combine and cancel automatically, and the result carries the correct units:
+                </p>
+
+                <div class="cell" data-cell-id="ch6-3">
+                    <pre class="language-python"><code class="language-python" spellcheck="false">import numpy as np
+from astropy import units as u
+from astropy import constants as const
+
+print("🚀 Escape Velocity Calculation")
+print("=" * 50)
+
+# Calculate escape velocity: v_esc = sqrt(2GM/R)
+v_esc_earth = np.sqrt(2 * const.G * const.M_earth / const.R_earth)
+
+print(f"\nRaw result: {v_esc_earth}")
+print(f"Simplified: {v_esc_earth.decompose()}")
+print(f"In km/s:    {v_esc_earth.to(u.km/u.s):.2f}")
+
+# Compare multiple bodies
+print("\n" + "=" * 50)
+print("Escape Velocities Across the Solar System")
+print("=" * 50)
+
+bodies = [
+    ("Earth", const.M_earth, const.R_earth),
+    ("Moon", 7.342e22 * u.kg, 1737.4 * u.km),
+    ("Mars", 6.417e23 * u.kg, 3389.5 * u.km),
+    ("Jupiter", const.M_jup, const.R_jup),
+    ("Sun", const.M_sun, const.R_sun),
+]
+
+print(f"{'Body':<10} {'Mass':<20} {'v_esc (km/s)':>15}")
+print("-" * 50)
+for name, M, R in bodies:
+    v = np.sqrt(2 * const.G * M / R).to(u.km/u.s)
+    print(f"{name:<10} {M.to(u.M_earth):<20.3f} {v:>15.2f}")</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <h2>6.4 Equivalencies: Converting Between Different Physical Quantities</h2>
+
+                <p>
+                    Astropy supports <strong>equivalencies</strong> — special conversions between
+                    physically related but dimensionally different quantities. For example,
+                    wavelength and frequency are related through the speed of light:
+                </p>
+
+                <div class="cell" data-cell-id="ch6-4">
+                    <pre class="language-python"><code class="language-python" spellcheck="false">from astropy import units as u
+
+print("🌈 Spectral Equivalencies")
+print("=" * 55)
+
+# Wavelength of hydrogen-alpha line
+H_alpha = 656.28 * u.nm
+
+print(f"Hydrogen-alpha wavelength: {H_alpha}")
+
+# Convert to frequency using spectral equivalency
+freq = H_alpha.to(u.THz, equivalencies=u.spectral())
+print(f"Frequency: {freq:.2f}")
+
+# Convert to energy
+energy = H_alpha.to(u.eV, equivalencies=u.spectral())
+print(f"Photon energy: {energy:.3f}")
+
+# Convert to wavenumber (used in spectroscopy)
+wavenumber = H_alpha.to(1/u.cm, equivalencies=u.spectral())
+print(f"Wavenumber: {wavenumber:.0f}")
+
+print("\n" + "=" * 55)
+print("Common Spectral Lines")
+print("=" * 55)
+
+lines = [
+    ("Lyman-alpha (UV)", 121.567 * u.nm),
+    ("H-alpha (Red)", 656.28 * u.nm),
+    ("Sodium D (Yellow)", 589.3 * u.nm),
+    ("21-cm Hydrogen", 21 * u.cm),
+    ("CO J=1-0 (Radio)", 2.6 * u.mm),
+]
+
+print(f"{'Line':<20} {'Wavelength':<15} {'Frequency':<15} {'Energy':>12}")
+print("-" * 65)
+for name, wavelength in lines:
+    freq = wavelength.to(u.GHz, equivalencies=u.spectral())
+    energy = wavelength.to(u.eV, equivalencies=u.spectral())
+    print(f"{name:<20} {wavelength:<15} {freq:<15.3f} {energy:>12.6f}")</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <h2>6.5 Dimensional Analysis and Error Catching</h2>
+
+                <p>
+                    One of the most valuable features is automatic detection of unit errors.
+                    Astropy will raise an exception if you try to add incompatible units:
+                </p>
+
+                <div class="cell" data-cell-id="ch6-5">
+                    <pre class="language-python"><code class="language-python" spellcheck="false">from astropy import units as u
+import numpy as np
+
+print("✅ Valid Operations")
+print("=" * 45)
+
+# Adding same dimensions works
+d1 = 100 * u.km
+d2 = 50000 * u.m
+print(f"{d1} + {d2} = {d1 + d2}")
+
+# Multiplying different units creates compound units
+force = 10 * u.kg * 9.8 * u.m / u.s**2
+print(f"Force: {force}")
+print(f"In Newtons: {force.to(u.N)}")
+
+print("\n❌ Invalid Operations (will raise error)")
+print("=" * 45)
+
+try:
+    # This will fail - can't add distance to time!
+    result = 5 * u.km + 3 * u.s
+except u.UnitConversionError as e:
+    print(f"Error caught: {type(e).__name__}")
+    print(f"Message: Cannot add km and s (incompatible units)")
+
+try:
+    # This will fail - can't compare mass to length!
+    comparison = (5 * u.kg) > (3 * u.m)
+except u.UnitConversionError as e:
+    print(f"\nError caught: {type(e).__name__}")
+    print(f"Message: Cannot compare kg and m (incompatible units)")
+
+print("\n✓ Unit checking prevents silent errors in calculations!")</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <h2>6.6 Practical Example: Stellar Parameters</h2>
+
+                <p>
+                    Let's put it all together with a comprehensive stellar calculation that
+                    demonstrates the power of unit-aware computing:
+                </p>
+
+                <div class="cell" data-cell-id="ch6-6">
+                    <pre class="language-python"><code class="language-python" spellcheck="false">import numpy as np
+from astropy import units as u
+from astropy import constants as const
+
+def stellar_analysis(name, radius, temperature, distance):
+    """Perform comprehensive stellar analysis with proper units."""
+    
+    print(f"\n{'='*60}")
+    print(f"⭐ STELLAR ANALYSIS: {name}")
+    print(f"{'='*60}")
+    
+    # Input parameters
+    print(f"\n📊 Input Parameters:")
+    print(f"   Radius:      {radius.to(u.R_sun):.2f}")
+    print(f"   Temperature: {temperature}")
+    print(f"   Distance:    {distance.to(u.pc):.1f} = {distance.to(u.lyr):.1f}")
+    
+    # Luminosity (Stefan-Boltzmann law)
+    L = 4 * np.pi * radius**2 * const.sigma_sb * temperature**4
+    L_solar = L.to(u.L_sun)
+    
+    print(f"\n💡 Luminosity:")
+    print(f"   L = 4πR²σT⁴")
+    print(f"   L = {L.to(u.W):.3e}")
+    print(f"   L = {L_solar:.2f}")
+    
+    # Absolute magnitude
+    M_sun = 4.83  # Sun's absolute magnitude
+    M_abs = M_sun - 2.5 * np.log10(L_solar.value)
+    
+    # Apparent magnitude
+    m_app = M_abs + 5 * np.log10(distance.to(u.pc).value / 10)
+    
+    print(f"\n🔭 Magnitudes:")
+    print(f"   Absolute magnitude: {M_abs:.2f}")
+    print(f"   Apparent magnitude: {m_app:.2f}")
+    
+    # Peak wavelength (Wien's law)
+    lambda_peak = const.b_wien / temperature
+    
+    print(f"\n🌈 Peak Emission:")
+    print(f"   λ_peak = b/T")
+    print(f"   λ_peak = {lambda_peak.to(u.nm):.1f}")
+    
+    # Classify by peak wavelength
+    peak_nm = lambda_peak.to(u.nm).value
+    if peak_nm < 400:
+        color = "Ultraviolet (Blue-white star)"
+    elif peak_nm < 500:
+        color = "Blue-Violet"
+    elif peak_nm < 570:
+        color = "Green-Yellow (like the Sun)"
+    elif peak_nm < 620:
+        color = "Orange"
+    else:
+        color = "Red"
+    print(f"   Color: {color}")
+    
+    # Flux at Earth
+    flux = L / (4 * np.pi * distance**2)
+    
+    print(f"\n📡 Flux at Earth:")
+    print(f"   F = L / (4πd²)")
+    print(f"   F = {flux.to(u.W/u.m**2):.3e}")
+    
+    return {
+        'luminosity': L_solar,
+        'abs_mag': M_abs,
+        'app_mag': m_app,
+        'peak_wavelength': lambda_peak.to(u.nm)
+    }
+
+# Analyze some famous stars
+stars = [
+    ("Sun", 1 * u.R_sun, 5778 * u.K, 1 * u.AU),
+    ("Sirius A", 1.711 * u.R_sun, 9940 * u.K, 8.6 * u.lyr),
+    ("Betelgeuse", 764 * u.R_sun, 3500 * u.K, 700 * u.lyr),
+    ("Proxima Centauri", 0.154 * u.R_sun, 3042 * u.K, 4.246 * u.lyr),
+]
+
+results = []
+for star_data in stars:
+    result = stellar_analysis(*star_data)
+    results.append((star_data[0], result))
+
+# Summary table
+print(f"\n\n{'='*70}")
+print("📋 SUMMARY TABLE")
+print(f"{'='*70}")
+print(f"{'Star':<18} {'L (L☉)':<12} {'M_abs':<10} {'m_app':<10} {'λ_peak (nm)':>12}")
+print("-"*70)
+for name, r in results:
+    print(f"{name:<18} {r['luminosity'].value:<12.2f} {r['abs_mag']:<10.2f} {r['app_mag']:<10.2f} {r['peak_wavelength'].value:>12.0f}")</code></pre>
+                    <div class="cell-controls">
+                        <button class="run-btn"><span class="icon">▶️</span> Run</button>
+                        <span class="cell-status"></span>
+                    </div>
+                    <div class="output"></div>
+                </div>
+
+                <div class="note">
+                    <div class="note-title">🎯 Key Takeaways</div>
+                    <p>
+                        Astropy's unit system provides: (1) automatic unit tracking and conversion,
+                        (2) built-in astronomical constants with uncertainties, (3) spectral and other
+                        physical equivalencies, and (4) error detection for dimensional mistakes.
+                        Using units consistently makes your code more readable, reliable, and reproducible.
+                    </p>
+                </div>
+
+                <div class="chapter-nav">
+                    <button class="chapter-nav-btn prev" data-target="ch5">← Chapter 5: H-R Diagram</button>
                     <button class="chapter-nav-btn next" data-target="appendix">Appendix: Constants →</button>
                 </div>
             </article>
@@ -1860,7 +2238,7 @@ print(f"Sun's surface escape velocity: {escape_velocity(M_sun, R_sun)/1000:.1f} 
                 </div>
 
                 <div class="chapter-nav">
-                    <button class="chapter-nav-btn prev" data-target="ch5">← Chapter 5: H-R Diagram</button>
+                    <button class="chapter-nav-btn prev" data-target="ch6">← Chapter 6: Astropy Units</button>
                     <button class="chapter-nav-btn next" disabled>End of Book</button>
                 </div>
             </article>
@@ -2020,8 +2398,8 @@ print(f"Sun's surface escape velocity: {escape_velocity(M_sun, R_sun)/1000:.1f} 
                     indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
                 });
 
-                self.postMessage({ type: 'status', message: 'Installing matplotlib...' });
-                await pyodide.loadPackage(['numpy', 'matplotlib']);
+                self.postMessage({ type: 'status', message: 'Installing packages...' });
+                await pyodide.loadPackage(['numpy', 'matplotlib', 'astropy']);
 
                 self.postMessage({ type: 'status', message: 'Configuring environment...' });
                 
